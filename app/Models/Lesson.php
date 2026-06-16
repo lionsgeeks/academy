@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['chapter_id', 'title', 'description', 'content_type', 'content', 'content_url', 'duration_minutes', 'order_index'])]
+class Lesson extends Model
+{
+    public function chapter(): BelongsTo
+    {
+        return $this->belongsTo(Chapter::class);
+    }
+
+    public function completions(): HasMany
+    {
+        return $this->hasMany(LessonCompletion::class);
+    }
+}

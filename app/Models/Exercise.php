@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['chapter_id', 'title', 'description', 'difficulty', 'xp_reward', 'order_index'])]
+class Exercise extends Model
+{
+    public function chapter(): BelongsTo
+    {
+        return $this->belongsTo(Chapter::class);
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(ExerciseSubmission::class);
+    }
+}
