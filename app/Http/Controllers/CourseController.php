@@ -127,7 +127,8 @@ class CourseController extends Controller
 
     private function ensureCanManageCourses(Request $request): void
     {
-        abort_unless($this->userHasAnyRole($this->courseManager($request)?->roles, ['admin', 'coach']), 403);
+        $manager = $this->courseManager($request);
+        abort_unless($this->userHasAnyRole($manager, ['admin', 'coach']), 403);
     }
 
     private function ensureOwnsCourse(Request $request, Course $course): void
@@ -154,19 +155,17 @@ class CourseController extends Controller
         return User::unguarded(fn () => User::create($this->localCoachAttributes()));
     }
 
-    private function userHasAnyRole(?string $roles, array $allowedRoles): bool
+    private function userHasAnyRole(?User $user, array $allowedRoles): bool
     {
         if (app()->environment('local') && ! auth()->check()) {
             return true;
         }
 
-        $decodedRoles = json_decode($roles ?? '[]', true);
-        $userRoles = is_array($decodedRoles) ? $decodedRoles : [$roles];
+        if (! $user) {
+            return false;
+        }
 
-        return collect($userRoles)
-            ->filter()
-            ->intersect($allowedRoles)
-            ->isNotEmpty();
+        return $user->Roles()->whereIn('role', $allowedRoles)->exists();
     }
 
     private function localCoachAttributes(): array

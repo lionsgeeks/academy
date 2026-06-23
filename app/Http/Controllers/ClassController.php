@@ -21,6 +21,7 @@ class ClassController extends Controller
         $info = [];
         $coaches = [];
         foreach ($classes as $class) {
+            $tmp = [];
             $coachRoleId = Role::where('role', 'coach')->value('id');
             $StudentRoleId = Role::where('role', 'student')->value('id');
 
@@ -38,6 +39,7 @@ class ClassController extends Controller
             $studentNum = $class->User()
                 ->wherePivot("role_id", $StudentRoleId)
                 ->get()->count();
+            $tmp["id"] = $class->id;
             $tmp["student_num"] = $studentNum;
             $tmp["class"] = $class->class;
             $tmp["promo"] = $class->promo;

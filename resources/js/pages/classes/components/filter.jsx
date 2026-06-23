@@ -21,7 +21,6 @@ const Filter = ({
     coaches,
     suAdmin,
 }) => {
-    console.log(promos);
     return (
         <>
             <div className="flex gap-10 border p-4 font-bold">
@@ -34,7 +33,10 @@ const Filter = ({
                             <SelectLabel>promo</SelectLabel>
                             {promos?.map((e, i) => {
                                 return (
-                                    <SelectItem value={e}>
+                                    <SelectItem
+                                        key={e}
+                                        value={e === 0 ? 'all' : String(e)}
+                                    >
                                         {e === 0 ? 'all' : e}
                                     </SelectItem>
                                 );
@@ -51,7 +53,7 @@ const Filter = ({
                             <SelectLabel>Specialty</SelectLabel>
 
                             {Specialty?.map((e, i) => {
-                                return <SelectItem value={e}>{e}</SelectItem>;
+                                return <SelectItem key={e} value={e}>{e}</SelectItem>;
                             })}
                         </SelectGroup>
                     </SelectContent>
@@ -65,7 +67,7 @@ const Filter = ({
                             <SelectLabel>Coach</SelectLabel>
 
                             {coaches?.map((e, i) => {
-                                return <SelectItem value={e}>{e}</SelectItem>;
+                                return <SelectItem key={e} value={e}>{e}</SelectItem>;
                             })}
                         </SelectGroup>
                     </SelectContent>
