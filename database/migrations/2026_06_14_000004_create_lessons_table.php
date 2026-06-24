@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('lessons', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('chapter_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('topic_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('content_type');
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unsignedInteger('order_index');
             $table->timestamps();
 
-            $table->unique(['chapter_id', 'order_index']);
+            $table->unique(['topic_id', 'order_index']);
         });
     }
 

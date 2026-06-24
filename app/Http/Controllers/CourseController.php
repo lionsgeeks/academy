@@ -25,8 +25,8 @@ class CourseController extends Controller
             'courses' => Course::query()
                 ->with('creator:id,name')
                 ->withCount([
-                    'modules as concepts_count',
-                    'chapters',
+                    'concepts',
+                    'topics',
                 ])
                 ->where('created_by', $manager->id)
                 ->latest()
@@ -35,7 +35,7 @@ class CourseController extends Controller
                     $courseData = $course->only($this->courseColumns());
                     $courseData['creator_name'] = $course->creator?->name ?? 'Local Coach';
                     $courseData['concepts_count'] = $course->concepts_count;
-                    $courseData['chapters_count'] = $course->chapters_count;
+                    $courseData['topics_count'] = $course->topics_count;
 
                     return $courseData;
                 }),
@@ -127,7 +127,8 @@ class CourseController extends Controller
 
     private function ensureCanManageCourses(Request $request): void
     {
-        abort_unless($this->userHasAnyRole($this->courseManager($request)?->roles, ['admin', 'coach']), 403);
+        $manager = $this->courseManager($request);
+        abort_unless($this->userHasAnyRole($manager, ['admin', 'coach']), 403);
     }
 
     private function ensureOwnsCourse(Request $request, Course $course): void
@@ -154,19 +155,17 @@ class CourseController extends Controller
         return User::unguarded(fn () => User::create($this->localCoachAttributes()));
     }
 
-    private function userHasAnyRole(?string $roles, array $allowedRoles): bool
+    private function userHasAnyRole(?User $user, array $allowedRoles): bool
     {
         if (app()->environment('local') && ! auth()->check()) {
             return true;
         }
 
-        $decodedRoles = json_decode($roles ?? '[]', true);
-        $userRoles = is_array($decodedRoles) ? $decodedRoles : [$roles];
+        if (! $user) {
+            return false;
+        }
 
-        return collect($userRoles)
-            ->filter()
-            ->intersect($allowedRoles)
-            ->isNotEmpty();
+        return $user->Roles()->whereIn('role', $allowedRoles)->exists();
     }
 
     private function localCoachAttributes(): array

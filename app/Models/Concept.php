@@ -8,15 +8,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['course_id', 'title', 'description', 'order_index'])]
-class Module extends Model
+class Concept extends Model
 {
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
-    public function chapters(): HasMany
+    public function topics(): HasMany
     {
-        return $this->hasMany(Chapter::class);
+        return $this->hasMany(Topic::class);
     }
 }

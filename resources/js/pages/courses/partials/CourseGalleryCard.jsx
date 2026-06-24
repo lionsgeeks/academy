@@ -78,12 +78,12 @@ export default function CourseGalleryCard({
                     />
                     <CountBadge
                         icon={<BookOpen className="size-4 text-alpha" />}
-                        value={course.chapters_count ?? 0}
+                        value={course.topics_count ?? 0}
                         label={
                             <TransText
-                                en="chapters"
-                                fr="chapters"
-                                ar="chapters"
+                                en="topics"
+                                fr="topics"
+                                ar="topics"
                             />
                         }
                     />

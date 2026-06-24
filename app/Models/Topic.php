@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['module_id', 'title', 'description', 'order_index'])]
-class Chapter extends Model
+#[Fillable(['concept_id', 'title', 'description', 'order_index'])]
+class Topic extends Model
 {
-    public function module(): BelongsTo
+    public function concept(): BelongsTo
     {
-        return $this->belongsTo(Module::class);
+        return $this->belongsTo(Concept::class);
     }
 
     public function lessons(): HasMany

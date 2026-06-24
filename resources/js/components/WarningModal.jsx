@@ -76,13 +76,13 @@ export default function WarningModal({
 
     return (
         <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="bg-light text-dark sm:max-w-[480px] dark:bg-dark dark:text-light">
+            <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader className="items-center text-center sm:items-center sm:text-center">
                     <span className="mb-1 inline-flex h-12 w-12 items-center justify-center rounded-full bg-alpha/10 text-alpha">
                         <AlertTriangle size={28} />
                     </span>
                     <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription className="text-dark/70 dark:text-light/70">
+                    <DialogDescription>
                         {description}
                     </DialogDescription>
                 </DialogHeader>

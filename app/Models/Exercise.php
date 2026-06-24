@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['chapter_id', 'title', 'description', 'difficulty', 'xp_reward', 'order_index'])]
+#[Fillable(['topic_id', 'title', 'description', 'difficulty', 'xp_reward', 'order_index'])]
 class Exercise extends Model
 {
-    public function chapter(): BelongsTo
+    public function topic(): BelongsTo
     {
-        return $this->belongsTo(Chapter::class);
+        return $this->belongsTo(Topic::class);
     }
 
     public function submissions(): HasMany

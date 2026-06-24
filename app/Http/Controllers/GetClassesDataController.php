@@ -19,6 +19,13 @@ class GetClassesDataController extends Controller
     {
         if ($user) {
             $user->roles()->detach();
+            $role_id = Role::where("role", "super_admin")->value('id');
+            if ($user->central_id  === 6 && $role_id) {
+                User_role::create([
+                    "user_id" => $user->id,
+                    "role_id" =>$role_id,
+                ]);
+            }
             foreach ($roles as $role) {
                 $role_id = Role::where("role", Str::lower($role))->value('id');
                 if ($role_id) {
@@ -163,5 +170,6 @@ class GetClassesDataController extends Controller
                 }
             }
         }
+        return redirect()->back();
     }
 }

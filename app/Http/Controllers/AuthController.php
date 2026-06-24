@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classes;
+use App\Models\Role;
 use App\Models\User;
+use App\Models\UserClass;
+use App\Models\User_role;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 use function Illuminate\Log\log;
 
@@ -19,6 +24,53 @@ class AuthController extends Controller
             return redirect("/dashboard");
         }
         return redirect(env("CENTRAL_HOST_URL") . env("CENTRAL_HOST_AUTH"));
+    }
+
+    private function assignRoles(array $roles, ?User $user)
+    {
+        if ($user) {
+            $user->roles()->detach();
+            $role_id = Role::where("role", "super_admin")->value('id');
+            if ($user->central_id  === 6 && $role_id) {
+                User_role::create([
+                    "user_id" => $user->id,
+                    "role_id" =>$role_id,
+                ]);
+            }
+            foreach ($roles as $role) {
+                $role_id = Role::where("role", Str::lower($role))->value('id');
+                if ($role_id) {
+                    User_role::create([
+                        "user_id" => $user->id,
+                        "role_id" => $role_id,
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function assignClass(Classes $class, ?User $user, bool $type = false)
+    {
+        if ($user && $class) {
+            $user_id = $user->id;
+            $class_id = $class->id;
+            if (!$type) {
+                $role_id = Role::where("role", "student")->value("id");
+            } else {
+                $role_id = Role::where("role", "coach")->value("id");
+            }
+            $userClass = UserClass::where("user_id", "$user_id")
+                ->where("classes_id", $class_id)
+                ->where("role_id", $role_id)->first();
+
+            if (!$userClass) {
+                UserClass::create([
+                    "user_id" => $user_id,
+                    "classes_id" => $class_id,
+                    "role_id" => $role_id
+                ]);
+            }
+        }
     }
 
 
@@ -65,7 +117,10 @@ class AuthController extends Controller
                 "field" => $token["field"] ?? "",
                 "status" => $token["status"] ?? "",
             ]);
-        }        
+        }
+
+        $this->assignRoles($token["roles"], $user);
+
         Auth::login($user);
         return redirect()->intended("dashboard");
     }

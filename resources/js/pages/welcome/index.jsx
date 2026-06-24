@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import Hero from './partials/Hero';
-
 export default function Welcome() {
     const shouldReduceMotion = useReducedMotion();
 
@@ -20,6 +19,7 @@ export default function Welcome() {
 
     return (
         <>
+
             <Head title="Welcome" />
             <div className="relative flex h-dvh flex-col overflow-hidden bg-background text-foreground">
                 <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">

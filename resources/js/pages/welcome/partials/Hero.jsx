@@ -44,7 +44,7 @@ const staggerContainer = {
 };
 
 const HERO_BULLETS = [
-    { icon: BookOpen, label: 'Courses & modules' },
+    { icon: BookOpen, label: 'Courses & concepts' },
     { icon: GraduationCap, label: 'Lessons & exercises' },
     { icon: LineChart, label: 'Track your progress' },
 ];

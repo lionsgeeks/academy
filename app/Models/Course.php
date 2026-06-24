@@ -17,14 +17,14 @@ class Course extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function modules(): HasMany
+    public function concepts(): HasMany
     {
-        return $this->hasMany(Module::class);
+        return $this->hasMany(Concept::class);
     }
 
-    public function chapters(): HasManyThrough
+    public function topics(): HasManyThrough
     {
-        return $this->hasManyThrough(Chapter::class, Module::class);
+        return $this->hasManyThrough(Topic::class, Concept::class);
     }
 
     public function coursePromotions(): HasMany

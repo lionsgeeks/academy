@@ -28,7 +28,7 @@ export function NavbarUser() {
     const user = auth.user ?? fallbackUser;
 
     return (
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex items-center gap-2">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
@@ -50,27 +50,6 @@ export function NavbarUser() {
                             <span className="max-w-full truncate text-sm font-medium leading-none">
                                 {user.name}
                             </span>
-                            <span className="flex w-full items-center gap-2 text-[0.68rem] leading-none text-muted-foreground">
-                                <span className="font-medium text-alpha">
-                                    <TransText en="Level" fr="Level" ar="Level" />{' '}
-                                    {profileStats.level}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-alpha">
-                                    <Coins className="size-3" />
-                                    {geekPoints}{' '}
-                                    <TransText
-                                        en="Geek Points"
-                                        fr="Geek Points"
-                                        ar="Geek Points"
-                                    />
-                                </span>
-                            </span>
-                            <span className="h-1 w-full overflow-hidden rounded-full bg-muted">
-                                <span
-                                    className="block h-full rounded-full bg-alpha"
-                                    style={{ width: `${profileStats.progress}%` }}
-                                />
-                            </span>
                         </span>
                         <ChevronsUpDown className="size-4 text-muted-foreground" />
                     </Button>
@@ -79,6 +58,33 @@ export function NavbarUser() {
                     <UserMenuContent user={user} />
                 </DropdownMenuContent>
             </DropdownMenu>
+        </div>
+    );
+}
+
+export function NavbarUserStats() {
+    return (
+        <div className="hidden min-w-52 max-w-64 flex-col gap-1 rounded-full border border-alpha/45 bg-[#fff7d1] px-4 py-2 shadow-[0_8px_24px_rgba(255,200,1,0.16)] md:flex dark:border-alpha/25 dark:bg-alpha/10 dark:shadow-[0_0_22px_rgba(255,200,1,0.08)]">
+            <div className="flex items-center justify-between gap-3 text-xs leading-none">
+                <span className="font-semibold text-[#5a4600] dark:text-foreground">
+                    <TransText en="Level" fr="Level" ar="Level" /> {profileStats.level}
+                </span>
+                <span className="inline-flex items-center gap-1 font-semibold text-[#8a6a00] dark:text-alpha">
+                    <Coins className="size-3.5" />
+                    {geekPoints}{' '}
+                    <TransText
+                        en="Geek Points"
+                        fr="Geek Points"
+                        ar="Geek Points"
+                    />
+                </span>
+            </div>
+            <span className="h-1.5 w-full overflow-hidden rounded-full bg-[#ead893] dark:bg-muted">
+                <span
+                    className="block h-full rounded-full bg-[#d8a200] dark:bg-alpha"
+                    style={{ width: `${profileStats.progress}%` }}
+                />
+            </span>
         </div>
     );
 }

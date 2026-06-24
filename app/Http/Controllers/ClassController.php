@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Classes;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\User_role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class ClassController extends Controller
@@ -19,6 +21,7 @@ class ClassController extends Controller
         $info = [];
         $coaches = [];
         foreach ($classes as $class) {
+            $tmp = [];
             $coachRoleId = Role::where('role', 'coach')->value('id');
             $StudentRoleId = Role::where('role', 'student')->value('id');
 
@@ -36,16 +39,27 @@ class ClassController extends Controller
             $studentNum = $class->User()
                 ->wherePivot("role_id", $StudentRoleId)
                 ->get()->count();
+            $tmp["id"] = $class->id;
             $tmp["student_num"] = $studentNum;
             $tmp["class"] = $class->class;
             $tmp["promo"] = $class->promo;
             $tmp["type"] = $class->type;
             $info[] = $tmp;
         }
+        $user_id = Auth::user()->id;
+        $role_id = Role::where("role","suAdmin")->value("id");
+        $isSuAdmin = User_role::where("user_id", $user_id)
+        ->where("role", $role_id)->first();
+        if (!$isSuAdmin) {
+            $val = false;
+        }
+        else{
+            $val = true;
+        }
         return Inertia::render('classes/index', [
             "items" => array_values($info),
             "coaches" => $coaches,
-
+            "suAdmin" => $val 
         ]);
     }
 

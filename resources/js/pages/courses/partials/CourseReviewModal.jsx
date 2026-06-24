@@ -55,7 +55,7 @@ export default function CourseReviewModal({
                         </span>
 
                         {course.description && (
-                            <p className="text-sm leading-6 text-muted-foreground">
+                            <p className="text-sm leading-6 text-beta/70 dark:text-light/70">
                                 {course.description}
                             </p>
                         )}
@@ -103,12 +103,12 @@ export default function CourseReviewModal({
                             <ReviewMetric
                                 label={
                                     <TransText
-                                        en="Chapters"
-                                        fr="Chapters"
-                                        ar="Chapters"
+                                        en="Topics"
+                                        fr="Topics"
+                                        ar="Topics"
                                     />
                                 }
-                                value={course.chapters_count ?? 0}
+                                value={course.topics_count ?? 0}
                             />
                         </div>
                     </div>
@@ -130,9 +130,9 @@ export default function CourseReviewModal({
 
 function ReviewMetric({ label, value }) {
     return (
-        <div className="rounded-md border border-border bg-muted/20 p-3">
-            <div className="text-lg font-semibold text-foreground">{value}</div>
-            <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="rounded-md border border-beta/15 bg-beta/5 p-3 dark:border-beta dark:bg-dark">
+            <div className="text-lg font-semibold text-beta dark:text-light">{value}</div>
+            <div className="text-xs text-beta/60 dark:text-light/60">{label}</div>
         </div>
     );
 }

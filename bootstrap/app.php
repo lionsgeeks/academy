@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\HandleCoach;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\HandleSuperAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -25,7 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
-
+        $middleware->alias(
+            ["suAdmin" => HandleSuperAdmin::class,
+            "coach" => HandleCoach::class]
+        );
         $middleware->redirectGuestsTo('/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
