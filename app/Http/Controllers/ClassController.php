@@ -15,6 +15,25 @@ class ClassController extends Controller
     /**
      * Display a listing of the resource.
      */
+
+    private function getLastCoach(Classes $class)
+    {
+        $coachRoleId = Role::where('role', 'coach')->value('id');
+        return $class->User()
+            ->wherePivot('role_id', $coachRoleId)
+            ->orderByPivot('created_at', 'desc')
+            ->get()->first();
+    }
+
+    private function getStudents(Classes $class)
+    {
+        $StudentRoleId = Role::where('role', 'student')->value('id');
+
+        return $class->User()
+            ->wherePivot("role_id", $StudentRoleId)
+            ->get();
+    }
+
     public function index()
     {
         $classes = Classes::orderBy("promo")->orderBy("class")->get()->all();
@@ -22,23 +41,16 @@ class ClassController extends Controller
         $coaches = [];
         foreach ($classes as $class) {
             $tmp = [];
-            $coachRoleId = Role::where('role', 'coach')->value('id');
-            $StudentRoleId = Role::where('role', 'student')->value('id');
 
-            $lastCoach = $class->User()
-                ->wherePivot('role_id', $coachRoleId)
-                ->orderByPivot('created_at', 'desc')
-                ->first();
+            $lastCoach = $this->getLastCoach($class);
             if ($lastCoach) {
                 $tmp["coach"] = $lastCoach["name"];
-                if(!in_array($lastCoach["name"],$coaches))
-                    {
-                        $coaches[] = $lastCoach["name"];
-                    }
+                // check if the coach is already in coaches list to avoid dupplicates 
+                if (!in_array($lastCoach["name"], $coaches)) {
+                    $coaches[] = $lastCoach["name"];
+                }
             }
-            $studentNum = $class->User()
-                ->wherePivot("role_id", $StudentRoleId)
-                ->get()->count();
+            $studentNum = $this->getStudents($class)->count();
             $tmp["id"] = $class->id;
             $tmp["student_num"] = $studentNum;
             $tmp["class"] = $class->class;
@@ -47,19 +59,18 @@ class ClassController extends Controller
             $info[] = $tmp;
         }
         $user_id = Auth::user()->id;
-        $role_id = Role::where("role","suAdmin")->value("id");
+        $role_id = Role::where("role", "super_admin")->value("id");
         $isSuAdmin = User_role::where("user_id", $user_id)
-        ->where("role", $role_id)->first();
+            ->where("role_id", $role_id)->first();
         if (!$isSuAdmin) {
             $val = false;
-        }
-        else{
+        } else {
             $val = true;
         }
         return Inertia::render('classes/index', [
             "items" => array_values($info),
             "coaches" => $coaches,
-            "suAdmin" => $val 
+            "suAdmin" => $val
         ]);
     }
 
@@ -82,9 +93,34 @@ class ClassController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Classes $classes)
+    public function show(int $id)
     {
-        //
+
+        $class = Classes::where("id", $id)->get()->first();
+        if (!$class) {
+            return response()->json([
+                'message' => 'Resource not found'
+            ], 404);
+        }
+        $students = $this->getStudents($class);
+        $coach = $this->getLastCoach($class);
+        // dd($coach);
+        $data = [];
+        $data["id"] = $class->id;
+        $data["class"] = $class->class;
+        $data["promo"] = $class->promo;
+        $data["type"] = $class->type;
+        if ($coach) {
+            $data["coach"] = $coach->name;
+        }
+        if ($students) {
+            foreach ($students as $key => $student) {
+                $data["students"][$key]["name"] = $student->name;
+                $data["students"][$key]["avatar"] = $student->avatar;
+                $data["students"][$key]["email"] = $student->email;
+            }
+        }
+        return Inertia::render("classes/[id]", ["data" => $data]);
     }
 
     /**

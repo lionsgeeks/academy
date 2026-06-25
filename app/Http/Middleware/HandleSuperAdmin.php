@@ -21,7 +21,7 @@ class HandleSuperAdmin
         $role_id = Role::where("role", "super_admin")->value('id');
         $user_id = Auth::user()->id;
         $super_admin = User_role::where("user_id", $user_id)
-            ->where("role", $role_id)->first();
+            ->where("role_id", $role_id)->first();
         if (!$super_admin) {
             return redirect("/dashboard");
         }
