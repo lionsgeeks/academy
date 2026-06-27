@@ -109,6 +109,6 @@ class User extends Authenticatable implements PasskeyUser
     
     public function wakatime()
     {
-        return $this->hasMany(WakaTime::class);
+        return $this->hasOne(WakaTime::class);
     }
 }
