@@ -6,6 +6,7 @@ use App\Models\Classes;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\User_role;
+use App\Models\WakaTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -32,6 +33,16 @@ class ClassController extends Controller
         return $class->User()
             ->wherePivot("role_id", $StudentRoleId)
             ->get();
+    }
+
+    private function getGithub(User $user)
+    {
+        return $account = $user->Social()->where("title", "github")->first()?->url;
+    }
+
+    private function getWakatimeKey(User $user)
+    {
+        return $user->wakatime()->value("wakatime_key");
     }
 
     public function index()
@@ -93,14 +104,12 @@ class ClassController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $id)
+    public function show($id)
     {
 
         $class = Classes::where("id", $id)->get()->first();
         if (!$class) {
-            return response()->json([
-                'message' => 'Resource not found'
-            ], 404);
+            return abort(404);
         }
         $students = $this->getStudents($class);
         $coach = $this->getLastCoach($class);
@@ -118,8 +127,11 @@ class ClassController extends Controller
                 $data["students"][$key]["name"] = $student->name;
                 $data["students"][$key]["avatar"] = $student->avatar;
                 $data["students"][$key]["email"] = $student->email;
+                $data["students"][$key]["gh_url"] = $this->getGithub($student);
+                $data["students"][$key]["wakaKey"] = $this->getWakatimeKey($student);
             }
         }
+
         return Inertia::render("classes/[id]", ["data" => $data]);
     }
 

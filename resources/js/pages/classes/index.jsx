@@ -66,7 +66,7 @@ const Classes = ({ items, coaches, suAdmin }) => {
                 <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                     {data.map((e, i) => {
                         return (
-                            <Link href={'classes/' + (i+1)} to="class data">
+                            <Link href={'classes/' +  e.id} to="class data">
                                 <Cards
                                     key={e.id}
                                     classNum={e.class}

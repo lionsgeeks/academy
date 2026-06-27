@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Social;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -95,10 +96,19 @@ class User extends Authenticatable implements PasskeyUser
 
     public function Roles()
     {
-        return $this->belongsToMany(Role::class,"user_roles");
+        return $this->belongsToMany(Role::class, "user_roles");
+    }
+    public function Social()
+    {
+        return $this->hasMany(Social::class);
     }
     public function classes()
     {
-        return $this->belongsToMany(Classes::class,"user_class");
+        return $this->belongsToMany(Classes::class, "user_class");
+    }
+    
+    public function wakatime()
+    {
+        return $this->hasOne(WakaTime::class);
     }
 }
