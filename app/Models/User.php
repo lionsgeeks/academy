@@ -74,6 +74,11 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(ClassroomAttendance::class);
     }
 
+    public function exerciseAttempts(): HasMany
+    {
+        return $this->hasMany(ExerciseAttempt::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

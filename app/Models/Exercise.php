@@ -22,6 +22,11 @@ class Exercise extends Model
         return $this->hasMany(ExerciseSubmission::class);
     }
 
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(ExerciseAttempt::class);
+    }
+
     public function promotions(): BelongsToMany
     {
         return $this->belongsToMany(Promotion::class, 'exercise_promotion')
