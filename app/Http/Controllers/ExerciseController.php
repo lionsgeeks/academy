@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Classes;
-use App\Models\Role;
+
 use App\Models\Topic;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use App\Services\Exercises\ExerciseClassEligibilityService;
 
 class ExerciseController extends Controller
 {
-    public function store(Request $request, Topic $topic): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        Topic $topic,
+        ExerciseClassEligibilityService $classEligibility,
+    ): RedirectResponse {
         $coach = $this->ensureCanManageExercises($request);
 
         $topic->loadMissing('concept.course');
@@ -46,7 +49,7 @@ class ExerciseController extends Controller
                 'integer',
                 'min:1',
                 Rule::unique('exercises', 'order_index')
-                    ->where(fn ($query) => $query->where(
+                    ->where(fn($query) => $query->where(
                         'topic_id',
                         $topic->id,
                     )),
@@ -83,7 +86,7 @@ class ExerciseController extends Controller
             ],
         ]);
 
-        $validator->after(function ($validator) use ($request, $coach): void {
+        $validator->after(function ($validator) use ($request, $coach, $classEligibility,): void {
             if ($validator->errors()->isNotEmpty()) {
                 return;
             }
@@ -126,7 +129,7 @@ class ExerciseController extends Controller
             }
 
             $classIds = collect($request->input('class_ids', []))
-                ->map(fn ($classId) => (int) $classId)
+                ->map(fn($classId) => (int) $classId)
                 ->unique()
                 ->values();
 
@@ -146,8 +149,8 @@ class ExerciseController extends Controller
                 return;
             }
 
-            $eligibleClassIds = $this
-                ->eligibleCurrentClassIdsFor($coach)
+            $eligibleClassIds = $classEligibility
+                ->currentClassIdsFor($coach)
                 ->intersect($classIds)
                 ->values();
 
@@ -182,54 +185,9 @@ class ExerciseController extends Controller
         return back()->with('success', 'Exercise saved successfully.');
     }
 
-    private function eligibleCurrentClassIdsFor($user)
-    {
-        $runningClasses = Classes::query()
-            ->whereNotNull('promo')
-            ->whereNotNull('start_time')
-            ->whereDate('start_time', '<=', today())
-            ->whereNotNull('end_time')
-            ->whereDate('end_time', '>=', today());
 
-        $currentPromo = (clone $runningClasses)->max('promo');
 
-        if ($currentPromo === null) {
-            return collect();
-        }
 
-        $eligibleClasses = (clone $runningClasses)
-            ->where('promo', $currentPromo);
-
-        if (! $this->canTargetAnyCurrentClass($user)) {
-            $coachRoleId = Role::query()
-                ->where('role', 'coach')
-                ->value('id');
-
-            if (! $coachRoleId) {
-                return collect();
-            }
-
-            $assignedClassIds = $user
-                ->classes()
-                ->wherePivot('role_id', $coachRoleId)
-                ->pluck('classes.id');
-
-            $eligibleClasses->whereIn('classes.id', $assignedClassIds);
-        }
-
-        return $eligibleClasses
-            ->pluck('classes.id')
-            ->map(fn ($classId) => (int) $classId)
-            ->values();
-    }
-
-    private function canTargetAnyCurrentClass($user): bool
-    {
-        return $user
-            ->Roles()
-            ->whereIn('role', ['admin', 'super_admin'])
-            ->exists();
-    }
 
     private function ensureCanManageExercises(Request $request)
     {
@@ -237,7 +195,7 @@ class ExerciseController extends Controller
 
         abort_unless(
             $user
-            && $user->Roles()
+                && $user->Roles()
                 ->whereIn('role', ['admin', 'coach', 'super_admin'])
                 ->exists(),
             403,
