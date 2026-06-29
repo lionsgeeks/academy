@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Classes extends Model
 {
     use HasFactory;
-    
+
     //
     protected $fillable = [
         "name",
@@ -23,7 +23,16 @@ class Classes extends Model
 
     public function User()
     {
-        return $this->belongsToMany(User::class,"user_classes")->withPivot("role_id");
+        return $this->belongsToMany(User::class, "user_classes")->withPivot("role_id");
     }
-    
+
+    public function exercises()
+    {
+        return $this->belongsToMany(
+            Exercise::class,
+            'exercise_classes',
+            'classes_id',
+            'exercise_id',
+        )->withTimestamps();
+    }
 }
