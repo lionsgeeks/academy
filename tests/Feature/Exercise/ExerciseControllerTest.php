@@ -16,7 +16,9 @@ function createExerciseControllerCoach(): User
 {
     $coach = User::query()->create([
         'name' => 'Exercise Controller Coach',
-        'email' => 'exercise-controller-coach-' . Str::lower(Str::random(12)) . '@example.test',
+        'email' => 'exercise-controller-coach-'
+            . Str::lower(Str::random(12))
+            . '@example.test',
     ]);
 
     $coachRole = Role::forceCreate([
@@ -33,7 +35,8 @@ function createExerciseControllerTopic(User $coach): Topic
     $course = Course::query()->create([
         'created_by' => $coach->id,
         'title' => 'Exercise Controller Course',
-        'slug' => 'exercise-controller-course-' . Str::lower(Str::random(8)),
+        'slug' => 'exercise-controller-course-'
+            . Str::lower(Str::random(8)),
         'status' => 'draft',
     ]);
 
@@ -75,6 +78,10 @@ function validExercisePayload(array $overrides = []): array
         'order_index' => 1,
         'correction_engine' => 'browser',
         'exercise_type' => 'html',
+        'correction_rules' => [
+            'requiredFiles' => ['index.html'],
+            'minimumScore' => 70,
+        ],
         'status' => 'draft',
         'promotion_ids' => [],
     ], $overrides);
@@ -83,7 +90,10 @@ function validExercisePayload(array $overrides = []): array
 it('allows a course owner to publish an exercise for an eligible promotion', function () {
     $coach = createExerciseControllerCoach();
     $topic = createExerciseControllerTopic($coach);
-    $promotion = createEligiblePromotionForCourse($topic->concept->course);
+
+    $promotion = createEligiblePromotionForCourse(
+        $topic->concept->course,
+    );
 
     $response = $this
         ->actingAs($coach)
@@ -104,6 +114,10 @@ it('allows a course owner to publish an exercise for an eligible promotion', fun
     expect($exercise->title)->toBe('Build a semantic HTML profile')
         ->and($exercise->correction_engine)->toBe('browser')
         ->and($exercise->exercise_type)->toBe('html')
+        ->and($exercise->correction_rules)->toBe([
+            'requiredFiles' => ['index.html'],
+            'minimumScore' => 70,
+        ])
         ->and($exercise->status)->toBe('published')
         ->and($exercise->published_at)->not->toBeNull()
         ->and($exercise->passing_score)->toBe(70);
@@ -193,6 +207,7 @@ it('rejects correction engine and exercise type mismatches', function () {
 it('forbids a coach from creating an exercise in another coach course', function () {
     $owner = createExerciseControllerCoach();
     $otherCoach = createExerciseControllerCoach();
+
     $topic = createExerciseControllerTopic($owner);
 
     $response = $this
@@ -205,4 +220,53 @@ it('forbids a coach from creating an exercise in another coach course', function
     $response->assertForbidden();
 
     expect(Exercise::query()->count())->toBe(0);
+});
+
+it('rejects a browser exercise without correction rules', function () {
+    $coach = createExerciseControllerCoach();
+    $topic = createExerciseControllerTopic($coach);
+
+    $response = $this
+        ->actingAs($coach)
+        ->from('/courses')
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'correction_rules' => null,
+            ]),
+        );
+
+    $response
+        ->assertRedirect('/courses')
+        ->assertSessionHasErrors('correction_rules');
+
+    expect(Exercise::query()->count())->toBe(0);
+});
+
+it('allows a github actions exercise without browser correction rules', function () {
+    $coach = createExerciseControllerCoach();
+    $topic = createExerciseControllerTopic($coach);
+
+    $response = $this
+        ->actingAs($coach)
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'correction_engine' => 'github_actions',
+                'exercise_type' => 'laravel',
+                'correction_rules' => null,
+            ]),
+        );
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    expect(Exercise::query()->count())->toBe(1)
+        ->and(
+            Exercise::query()
+                ->firstOrFail()
+                ->correction_rules,
+        )
+        ->toBeNull();
 });

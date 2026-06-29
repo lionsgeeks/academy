@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['topic_id', 'title', 'description', 'difficulty', 'xp_reward', 'order_index', 'correction_engine', 'exercise_type', 'status', 'passing_score', 'published_at'])]
+#[Fillable(['topic_id', 'title', 'description', 'difficulty', 'xp_reward', 'order_index', 'correction_engine', 'correction_rules' , 'exercise_type', 'status', 'passing_score', 'published_at' ])]
+
 class Exercise extends Model
 {
     public function topic(): BelongsTo
@@ -32,6 +33,7 @@ class Exercise extends Model
         return [
             'passing_score' => 'integer',
             'published_at' => 'datetime',
+            'correction_rules' => 'array',
         ];
     }
 }

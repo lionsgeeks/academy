@@ -38,13 +38,14 @@ class ExerciseController extends Controller
                 'integer',
                 'min:1',
                 Rule::unique('exercises', 'order_index')
-                    ->where(fn ($query) => $query->where('topic_id', $topic->id)),
+                    ->where(fn($query) => $query->where('topic_id', $topic->id)),
             ],
             'correction_engine' => ['required', 'string', Rule::in([
                 'browser',
                 'github_actions',
             ])],
             'exercise_type' => ['required', 'string', 'max:100'],
+            'correction_rules' => ['nullable', 'array'],
             'status' => ['required', 'string', Rule::in([
                 'draft',
                 'published',
@@ -87,8 +88,21 @@ class ExerciseController extends Controller
                 return;
             }
 
+
+            if (
+                $engine === 'browser'
+                && ! is_array($request->input('correction_rules'))
+            ) {
+                $validator->errors()->add(
+                    'correction_rules',
+                    'Browser exercises require correction rules.',
+                );
+
+                return;
+            }
+
             $promotionIds = collect($request->input('promotion_ids', []))
-                ->map(fn ($promotionId) => (int) $promotionId)
+                ->map(fn($promotionId) => (int) $promotionId)
                 ->unique()
                 ->values();
 
@@ -112,7 +126,7 @@ class ExerciseController extends Controller
                 ->publishablePromotions()
                 ->whereKey($promotionIds)
                 ->pluck('promotions.id')
-                ->map(fn ($promotionId) => (int) $promotionId)
+                ->map(fn($promotionId) => (int) $promotionId)
                 ->values();
 
             if (
@@ -135,6 +149,7 @@ class ExerciseController extends Controller
             'order_index' => $data['order_index'],
             'correction_engine' => $data['correction_engine'],
             'exercise_type' => $data['exercise_type'],
+            'correction_rules' => $data['correction_rules'] ?? null,
             'status' => $data['status'],
             'passing_score' => 70,
             'published_at' => $data['status'] === 'published'
@@ -153,7 +168,7 @@ class ExerciseController extends Controller
 
         abort_unless(
             $user
-            && $user->Roles()
+                && $user->Roles()
                 ->whereIn('role', ['admin', 'coach', 'super_admin'])
                 ->exists(),
             403,
