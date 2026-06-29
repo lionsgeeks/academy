@@ -94,15 +94,23 @@ function exerciseTypeLabel(type) {
 
 export default function StepReview({
     data,
-    publishablePromotions = [],
+    publishableClasses = [],
 }) {
     const isMarkdown =
         data.description_format === DESCRIPTION_FORMATS.MARKDOWN;
 
     const difficulty = DIFFICULTY_CONFIG[data.difficulty];
 
-    const selectedPromotions = publishablePromotions.filter((promotion) =>
-        (data.promotion_ids ?? []).includes(Number(promotion.id)),
+    const classLabel = (classItem) => {
+        const formattedType = classItem.type
+            ? `${classItem.type.charAt(0).toUpperCase()}${classItem.type.slice(1)}`
+            : 'Class';
+
+        return `Promo ${classItem.promo} · ${formattedType} ${classItem.class}`;
+    };
+
+    const selectedClasses = publishableClasses.filter((classItem) =>
+        (data.class_ids ?? []).includes(Number(classItem.id)),
     );
 
     const isBrowser = data.correction_engine === 'browser';
@@ -156,8 +164,8 @@ export default function StepReview({
                             </span>
                         )
                     ) : data.description_html
-                          .replace(/<[^>]*>/g, '')
-                          .trim() ? (
+                        .replace(/<[^>]*>/g, '')
+                        .trim() ? (
                         <div
                             dangerouslySetInnerHTML={{
                                 __html: data.description_html,
@@ -311,30 +319,30 @@ export default function StepReview({
                         icon={Users}
                         label={
                             <TransText
-                                en="Target promotions"
-                                fr="Promotions ciblées"
-                                ar="الأفواج المستهدفة"
+                                en="Target classes"
+                                fr="Classes ciblées"
+                                ar="الأقسام المستهدفة"
                             />
                         }
                     >
-                        {selectedPromotions.length > 0 ? (
+                        {selectedClasses.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
-                                {selectedPromotions.map((promotion) => (
+                                {selectedClasses.map((classItem) => (
                                     <Badge
-                                        key={promotion.id}
+                                        key={classItem.id}
                                         variant="outline"
                                         className="border-alpha/40 bg-alpha/10 text-beta dark:text-alpha"
                                     >
-                                        {promotion.name}
+                                        {classLabel(classItem)}
                                     </Badge>
                                 ))}
                             </div>
                         ) : (
                             <span className="text-sm text-error">
                                 <TransText
-                                    en="No active promotion selected."
-                                    fr="Aucune promotion active sélectionnée."
-                                    ar="لم يتم اختيار أي فوج نشط."
+                                    en="No current class selected."
+                                    fr="Aucune classe actuelle sélectionnée."
+                                    ar="لم يتم اختيار أي قسم حالي."
                                 />
                             </span>
                         )}

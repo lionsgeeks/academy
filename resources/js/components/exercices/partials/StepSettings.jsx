@@ -132,20 +132,28 @@ export default function StepSettings({
     data,
     errors,
     onChange,
-    publishablePromotions = [],
+    publishableClasses = [],
 }) {
     const engine = data.correction_engine || 'browser';
     const availableTypes = EXERCISE_TYPES[engine] ?? [];
-    const selectedPromotionIds = data.promotion_ids ?? [];
+    const selectedClassIds = data.class_ids ?? [];
 
-    const togglePromotion = (promotionId) => {
-        const normalizedId = Number(promotionId);
+    const classLabel = (classItem) => {
+        const formattedType = classItem.type
+            ? `${classItem.type.charAt(0).toUpperCase()}${classItem.type.slice(1)}`
+            : 'Class';
 
-        const nextPromotionIds = selectedPromotionIds.includes(normalizedId)
-            ? selectedPromotionIds.filter((id) => id !== normalizedId)
-            : [...selectedPromotionIds, normalizedId];
+        return `Promo ${classItem.promo} · ${formattedType} ${classItem.class}`;
+    };
 
-        onChange('promotion_ids', nextPromotionIds);
+    const toggleClass = (classId) => {
+        const normalizedId = Number(classId);
+
+        const nextClassIds = selectedClassIds.includes(normalizedId)
+            ? selectedClassIds.filter((id) => id !== normalizedId)
+            : [...selectedClassIds, normalizedId];
+
+        onChange('class_ids', nextClassIds);
     };
 
     const changeEngine = (nextEngine) => {
@@ -418,40 +426,40 @@ export default function StepSettings({
                         <div>
                             <p className="text-sm font-medium text-beta dark:text-light">
                                 <TransText
-                                    en="Publish to active promotions"
-                                    fr="Publier pour les promotions actives"
-                                    ar="النشر للأفواج النشطة"
+                                    en="Publish to current classes"
+                                    fr="Publier pour les classes actuelles"
+                                    ar="النشر للأقسام الحالية"
                                 />
                             </p>
 
                             <p className="mt-0.5 text-xs leading-5 text-beta/55 dark:text-light/55">
                                 <TransText
-                                    en="This list comes from the database. Archived or inactive promotions are not shown."
-                                    fr="Cette liste provient de la base de données. Les promotions archivées ou inactives ne sont pas affichées."
-                                    ar="هذه القائمة تأتي من قاعدة البيانات. الأفواج المؤرشفة أو غير النشطة لا تظهر."
+                                    en="Only eligible classes are shown. Finished classes and classes that have not started are excluded."
+                                    fr="Seules les classes éligibles sont affichées. Les classes terminées et celles qui n'ont pas commencé sont exclues."
+                                    ar="تظهر فقط الأقسام المؤهلة. يتم استبعاد الأقسام المنتهية والأقسام التي لم تبدأ بعد."
                                 />
                             </p>
                         </div>
                     </div>
 
-                    {publishablePromotions.length === 0 ? (
+                    {publishableClasses.length === 0 ? (
                         <p className="rounded-lg border border-dashed border-beta/20 px-3 py-3 text-sm text-beta/55 dark:border-light/20 dark:text-light/55">
                             <TransText
-                                en="No active promotion is available. Save this exercise as a draft."
-                                fr="Aucune promotion active n'est disponible. Enregistrez cet exercice comme brouillon."
-                                ar="لا يوجد فوج نشط متاح. احفظ هذا التمرين كمسودة."
+                                en="No current class is available. Save this exercise as a draft."
+                                fr="Aucune classe actuelle n'est disponible. Enregistrez cet exercice comme brouillon."
+                                ar="لا يوجد قسم حالي متاح. احفظ هذا التمرين كمسودة."
                             />
                         </p>
                     ) : (
                         <div className="space-y-2">
-                            {publishablePromotions.map((promotion) => {
-                                const checked = selectedPromotionIds.includes(
-                                    Number(promotion.id),
+                            {publishableClasses.map((classItem) => {
+                                const checked = selectedClassIds.includes(
+                                    Number(classItem.id),
                                 );
 
                                 return (
                                     <label
-                                        key={promotion.id}
+                                        key={classItem.id}
                                         className={cn(
                                             'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 transition-colors',
                                             checked
@@ -462,21 +470,23 @@ export default function StepSettings({
                                         <Checkbox
                                             checked={checked}
                                             onCheckedChange={() =>
-                                                togglePromotion(promotion.id)
+                                                toggleClass(classItem.id)
                                             }
                                             className="data-[state=checked]:border-alpha data-[state=checked]:bg-alpha data-[state=checked]:text-beta"
                                         />
 
                                         <span className="min-w-0">
                                             <span className="block text-sm font-medium text-beta dark:text-light">
-                                                {promotion.name}
+                                                {classLabel(classItem)}
                                             </span>
 
-                                            {promotion.slug && (
-                                                <span className="block text-xs text-beta/45 dark:text-light/45">
-                                                    {promotion.slug}
-                                                </span>
-                                            )}
+                                            <span className="block text-xs text-beta/45 dark:text-light/45">
+                                                <TransText
+                                                    en="Exact class target"
+                                                    fr="Classe ciblée"
+                                                    ar="قسم مستهدف"
+                                                />
+                                            </span>
                                         </span>
                                     </label>
                                 );
@@ -484,10 +494,8 @@ export default function StepSettings({
                         </div>
                     )}
 
-                    {errors.promotion_ids && (
-                        <p className="text-sm text-error">
-                            {errors.promotion_ids}
-                        </p>
+                    {errors.class_ids && (
+                        <p className="text-sm text-error">{errors.class_ids}</p>
                     )}
                 </div>
             )}

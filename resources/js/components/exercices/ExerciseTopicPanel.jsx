@@ -5,7 +5,7 @@ import Exercises from './index';
 
 export default function ExerciseTopicPanel({
     topic,
-    publishablePromotions = [],
+    publishableClasses = [],
     className,
 }) {
     if (!topic?.id) {
@@ -63,7 +63,7 @@ export default function ExerciseTopicPanel({
                 <div className="shrink-0">
                     <Exercises
                         topicId={topic.id}
-                        publishablePromotions={publishablePromotions}
+                        publishableClasses={publishableClasses}
                     />
                 </div>
             </div>

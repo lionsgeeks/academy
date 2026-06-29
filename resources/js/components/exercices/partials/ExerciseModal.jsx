@@ -39,7 +39,7 @@ export const EMPTY_EXERCISE_FORM = {
     correction_engine: 'browser',
     exercise_type: 'html',
     status: 'draft',
-    promotion_ids: [],
+    class_ids: [],
 
     rules: null,
     rulesSource: 'paste',
@@ -132,9 +132,9 @@ function validateStep(step, data) {
 
         if (
             data.status === 'published'
-            && (!data.promotion_ids || data.promotion_ids.length === 0)
+            && (!data.class_ids || data.class_ids.length === 0)
         ) {
-            errors.promotion_ids = 'Choose at least one active promotion before publishing.';
+            errors.class_ids = 'Choose at least one current class before publishing.';
         }
     }
 
@@ -163,7 +163,7 @@ function buildPayload(data) {
                 : null,
 
         status: data.status,
-        promotion_ids: data.promotion_ids ?? [],
+        class_ids: data.class_ids ?? [],
     };
 }
 
@@ -175,7 +175,7 @@ export default function ExerciseModal({
     onSubmit,
     topicId,
     coachType = 'coding',
-    publishablePromotions = [],
+    publishableClasses = [],
 }) {
     const [step, setStep] = useState(1);
     const [errors, setErrors] = useState({});
@@ -372,13 +372,13 @@ export default function ExerciseModal({
                                         data={data}
                                         errors={errors}
                                         onChange={updateField}
-                                        publishablePromotions={publishablePromotions}
+                                        publishableClasses={publishableClasses}
                                     />
                                 )}
                                 {step === 3 && (
                                     <StepReview
                                         data={data}
-                                        publishablePromotions={publishablePromotions}
+                                        publishableClasses={publishableClasses}
                                     />
                                 )}
                             </motion.div>

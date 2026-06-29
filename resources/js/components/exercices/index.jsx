@@ -11,7 +11,7 @@ export { EMPTY_EXERCISE_FORM } from './partials/ExerciseModal';
 export default function Exercises({
     coachType = 'coding',
     topicId,
-    publishablePromotions = [],
+    publishableClasses = [],
 }) {
     const [open, setOpen] = useState(false);
 
@@ -48,7 +48,7 @@ export default function Exercises({
                 onOpenChange={setOpen}
                 coachType={coachType}
                 topicId={topicId}
-                publishablePromotions={publishablePromotions}
+                publishableClasses={publishableClasses}
                 onSubmit={submitExercise}
             />
         </>
