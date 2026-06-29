@@ -13,5 +13,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('courses/{course}/status', [CourseController::class, 'updateStatus'])->name('courses.update-status');
     Route::delete('courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
     Route::post('topics/{topic}/exercises', [ExerciseController::class, 'store'],)->name('topics.exercises.store');
-    Route::get('student/exercises',[StudentExerciseController::class, 'index'],)->name('student.exercises.index');
+    Route::get('student/exercises', [StudentExerciseController::class, 'index'],)->name('student.exercises.index');
+    Route::get('student/exercises/{exercise}',[StudentExerciseController::class, 'show'],)->name('student.exercises.show');
 });

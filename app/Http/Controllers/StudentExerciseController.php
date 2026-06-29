@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exercise;
+use App\Models\User;
 use App\Services\Exercises\StudentExerciseVisibilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +14,39 @@ class StudentExerciseController extends Controller
         Request $request,
         StudentExerciseVisibilityService $exerciseVisibility,
     ): JsonResponse {
+        $student = $this->ensureStudent($request);
+
+        $exercises = $exerciseVisibility
+            ->visibleExercisesFor($student)
+            ->map(
+                fn (Exercise $exercise): array => $this->exercisePayload($exercise),
+            )
+            ->values();
+
+        return response()->json([
+            'data' => $exercises,
+        ]);
+    }
+
+    public function show(
+        Request $request,
+        Exercise $exercise,
+        StudentExerciseVisibilityService $exerciseVisibility,
+    ): JsonResponse {
+        $student = $this->ensureStudent($request);
+
+        $visibleExercise = $exerciseVisibility
+            ->visibleExerciseFor($student, $exercise);
+
+        abort_unless($visibleExercise, 404);
+
+        return response()->json([
+            'data' => $this->exercisePayload($visibleExercise),
+        ]);
+    }
+
+    private function ensureStudent(Request $request): User
+    {
         $student = $request->user();
 
         abort_unless(
@@ -22,40 +57,36 @@ class StudentExerciseController extends Controller
             403,
         );
 
-        $exercises = $exerciseVisibility
-            ->visibleExercisesFor($student)
-            ->map(function ($exercise): array {
-                return [
-                    'id' => $exercise->id,
-                    'title' => $exercise->title,
-                    'description' => $exercise->description,
-                    'difficulty' => $exercise->difficulty,
-                    'xp_reward' => $exercise->xp_reward,
-                    'correction_engine' => $exercise->correction_engine,
-                    'exercise_type' => $exercise->exercise_type,
-                    'passing_score' => $exercise->passing_score,
+        return $student;
+    }
 
-                    'topic' => [
-                        'id' => $exercise->topic->id,
-                        'title' => $exercise->topic->title,
+    private function exercisePayload(Exercise $exercise): array
+    {
+        return [
+            'id' => $exercise->id,
+            'title' => $exercise->title,
+            'description' => $exercise->description,
+            'difficulty' => $exercise->difficulty,
+            'xp_reward' => $exercise->xp_reward,
+            'correction_engine' => $exercise->correction_engine,
+            'exercise_type' => $exercise->exercise_type,
+            'passing_score' => $exercise->passing_score,
 
-                        'concept' => [
-                            'id' => $exercise->topic->concept->id,
-                            'title' => $exercise->topic->concept->title,
+            'topic' => [
+                'id' => $exercise->topic->id,
+                'title' => $exercise->topic->title,
 
-                            'course' => [
-                                'id' => $exercise->topic->concept->course->id,
-                                'title' => $exercise->topic->concept->course->title,
-                                'slug' => $exercise->topic->concept->course->slug,
-                            ],
-                        ],
+                'concept' => [
+                    'id' => $exercise->topic->concept->id,
+                    'title' => $exercise->topic->concept->title,
+
+                    'course' => [
+                        'id' => $exercise->topic->concept->course->id,
+                        'title' => $exercise->topic->concept->course->title,
+                        'slug' => $exercise->topic->concept->course->slug,
                     ],
-                ];
-            })
-            ->values();
-
-        return response()->json([
-            'data' => $exercises,
-        ]);
+                ],
+            ],
+        ];
     }
 }

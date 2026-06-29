@@ -187,3 +187,74 @@ it('forbids a non student from reading the student exercise endpoint', function 
 
     $response->assertForbidden();
 });
+
+it('returns one visible student exercise without private correction rules', function () {
+    $student = createStudentExerciseEndpointUser();
+
+    $studentClass = createStudentExerciseEndpointClass(1);
+
+    assignStudentExerciseEndpointStudentToClass($student, $studentClass);
+
+    $topic = createStudentExerciseEndpointTopic();
+
+    $exercise = createStudentExerciseEndpointExercise($topic, 1);
+
+    $exercise->classes()->attach($studentClass->id);
+
+    $response = $this
+        ->actingAs($student)
+        ->getJson(route('student.exercises.show', $exercise));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.id', $exercise->id)
+        ->assertJsonPath('data.title', $exercise->title)
+        ->assertJsonPath('data.topic.id', $topic->id)
+        ->assertJsonPath(
+            'data.topic.concept.course.id',
+            $topic->concept->course->id,
+        );
+
+    expect($response->json('data'))
+        ->not->toHaveKey('correction_rules');
+});
+
+it('returns not found for exercises outside the student classes or draft exercises', function () {
+    $student = createStudentExerciseEndpointUser();
+
+    $studentClass = createStudentExerciseEndpointClass(1);
+    $otherClass = createStudentExerciseEndpointClass(2);
+
+    assignStudentExerciseEndpointStudentToClass($student, $studentClass);
+
+    $topic = createStudentExerciseEndpointTopic();
+
+    $otherClassExercise = createStudentExerciseEndpointExercise($topic, 1);
+    $draftExercise = createStudentExerciseEndpointExercise($topic, 2, 'draft');
+
+    $otherClassExercise->classes()->attach($otherClass->id);
+    $draftExercise->classes()->attach($studentClass->id);
+
+    $this
+        ->actingAs($student)
+        ->getJson(route('student.exercises.show', $otherClassExercise))
+        ->assertNotFound();
+
+    $this
+        ->actingAs($student)
+        ->getJson(route('student.exercises.show', $draftExercise))
+        ->assertNotFound();
+});
+
+it('forbids a non student from reading one student exercise', function () {
+    $coach = createStudentExerciseEndpointUser('coach');
+
+    $topic = createStudentExerciseEndpointTopic();
+
+    $exercise = createStudentExerciseEndpointExercise($topic, 1);
+
+    $this
+        ->actingAs($coach)
+        ->getJson(route('student.exercises.show', $exercise))
+        ->assertForbidden();
+});

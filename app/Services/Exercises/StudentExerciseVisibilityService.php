@@ -40,4 +40,37 @@ class StudentExerciseVisibilityService
             ->orderBy('order_index')
             ->get();
     }
+
+    public function visibleExerciseFor(
+        User $student,
+        Exercise $exercise,
+    ): ?Exercise {
+        $studentRoleId = Role::query()
+            ->where('role', 'student')
+            ->value('id');
+
+        if (! $studentRoleId) {
+            return null;
+        }
+
+        $studentClassIds = $student
+            ->classes()
+            ->wherePivot('role_id', $studentRoleId)
+            ->pluck('classes.id');
+
+        if ($studentClassIds->isEmpty()) {
+            return null;
+        }
+
+        return Exercise::query()
+            ->whereKey($exercise->id)
+            ->where('status', 'published')
+            ->whereHas('classes', function ($query) use ($studentClassIds) {
+                $query->whereIn('classes.id', $studentClassIds);
+            })
+            ->with([
+                'topic.concept.course',
+            ])
+            ->first();
+    }
 }
