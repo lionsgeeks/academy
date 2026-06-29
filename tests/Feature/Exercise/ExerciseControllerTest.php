@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Classes;
 use App\Models\Concept;
 use App\Models\Course;
 use App\Models\Exercise;
-use App\Models\Promotion;
 use App\Models\Role;
 use App\Models\Topic;
 use App\Models\User;
@@ -12,22 +12,35 @@ use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
-function createExerciseControllerCoach(): User
+function exerciseControllerRole(string $role): Role
 {
-    $coach = User::query()->create([
-        'name' => 'Exercise Controller Coach',
-        'email' => 'exercise-controller-coach-'
+    return Role::query()
+        ->where('role', $role)
+        ->first()
+        ?? Role::forceCreate([
+            'role' => $role,
+        ]);
+}
+
+function createExerciseControllerUser(string $role = 'coach'): User
+{
+    $user = User::query()->create([
+        'name' => "Exercise Controller {$role}",
+        'email' => 'exercise-controller-'
+            . $role
+            . '-'
             . Str::lower(Str::random(12))
             . '@example.test',
     ]);
 
-    $coachRole = Role::forceCreate([
-        'role' => 'coach',
-    ]);
+    $user->Roles()->attach(exerciseControllerRole($role)->id);
 
-    $coach->Roles()->attach($coachRole->id);
+    return $user;
+}
 
-    return $coach;
+function createExerciseControllerCoach(): User
+{
+    return createExerciseControllerUser('coach');
 }
 
 function createExerciseControllerTopic(User $coach): Topic
@@ -53,19 +66,33 @@ function createExerciseControllerTopic(User $coach): Topic
     ]);
 }
 
-function createEligiblePromotionForCourse(Course $course): Promotion
-{
-    $promotion = Promotion::query()->create([
-        'name' => 'Promo 5',
-        'slug' => 'promo-5-' . Str::lower(Str::random(8)),
-        'status' => 'active',
+function createExerciseControllerClass(
+    int $promo = 6,
+    string $type = 'coding',
+    int $classNumber = 1,
+    ?string $startTime = null,
+    ?string $endTime = null,
+): Classes {
+    return Classes::query()->create([
+        'central_id' => random_int(100000, 999999),
+        'name' => "Promo {$promo} - {$type} {$classNumber}",
+        'promo' => $promo,
+        'type' => $type,
+        'class' => $classNumber,
+        'start_time' => $startTime ?? today()->subMonth()->toDateString(),
+        'end_time' => $endTime ?? today()->addMonth()->toDateString(),
     ]);
+}
 
-    $course->promotions()->attach($promotion->id, [
-        'status' => 'active',
+function assignExerciseControllerCoachToClass(
+    User $coach,
+    Classes $class,
+): void {
+    $coach->classes()->syncWithoutDetaching([
+        $class->id => [
+            'role_id' => exerciseControllerRole('coach')->id,
+        ],
     ]);
-
-    return $promotion;
 }
 
 function validExercisePayload(array $overrides = []): array
@@ -83,17 +110,16 @@ function validExercisePayload(array $overrides = []): array
             'minimumScore' => 70,
         ],
         'status' => 'draft',
-        'promotion_ids' => [],
+        'class_ids' => [],
     ], $overrides);
 }
 
-it('allows a course owner to publish an exercise for an eligible promotion', function () {
+it('allows a course owner to publish an exercise for an assigned current class', function () {
     $coach = createExerciseControllerCoach();
     $topic = createExerciseControllerTopic($coach);
 
-    $promotion = createEligiblePromotionForCourse(
-        $topic->concept->course,
-    );
+    $class = createExerciseControllerClass();
+    assignExerciseControllerCoachToClass($coach, $class);
 
     $response = $this
         ->actingAs($coach)
@@ -101,7 +127,7 @@ it('allows a course owner to publish an exercise for an eligible promotion', fun
             route('topics.exercises.store', $topic),
             validExercisePayload([
                 'status' => 'published',
-                'promotion_ids' => [$promotion->id],
+                'class_ids' => [$class->id],
             ]),
         );
 
@@ -120,15 +146,17 @@ it('allows a course owner to publish an exercise for an eligible promotion', fun
         ])
         ->and($exercise->status)->toBe('published')
         ->and($exercise->published_at)->not->toBeNull()
-        ->and($exercise->passing_score)->toBe(70);
+        ->and($exercise->passing_score)->toBe(70)
+        ->and($exercise->classes->pluck('id')->all())
+        ->toBe([$class->id]);
 
-    $this->assertDatabaseHas('exercise_promotion', [
+    $this->assertDatabaseHas('exercise_classes', [
         'exercise_id' => $exercise->id,
-        'promotion_id' => $promotion->id,
+        'classes_id' => $class->id,
     ]);
 });
 
-it('rejects a published exercise without selected promotions', function () {
+it('rejects a published exercise without selected classes', function () {
     $coach = createExerciseControllerCoach();
     $topic = createExerciseControllerTopic($coach);
 
@@ -139,30 +167,22 @@ it('rejects a published exercise without selected promotions', function () {
             route('topics.exercises.store', $topic),
             validExercisePayload([
                 'status' => 'published',
-                'promotion_ids' => [],
+                'class_ids' => [],
             ]),
         );
 
     $response
         ->assertRedirect('/courses')
-        ->assertSessionHasErrors('promotion_ids');
+        ->assertSessionHasErrors('class_ids');
 
     expect(Exercise::query()->count())->toBe(0);
 });
 
-it('rejects a promotion that is not eligible for the topic course', function () {
+it('rejects a current class that is not assigned to the coach', function () {
     $coach = createExerciseControllerCoach();
     $topic = createExerciseControllerTopic($coach);
 
-    $archivedPromotion = Promotion::query()->create([
-        'name' => 'Graduated Promo',
-        'slug' => 'graduated-promo-' . Str::lower(Str::random(8)),
-        'status' => 'archived',
-    ]);
-
-    $topic->concept->course->promotions()->attach($archivedPromotion->id, [
-        'status' => 'active',
-    ]);
+    $class = createExerciseControllerClass();
 
     $response = $this
         ->actingAs($coach)
@@ -171,13 +191,78 @@ it('rejects a promotion that is not eligible for the topic course', function () 
             route('topics.exercises.store', $topic),
             validExercisePayload([
                 'status' => 'published',
-                'promotion_ids' => [$archivedPromotion->id],
+                'class_ids' => [$class->id],
             ]),
         );
 
     $response
         ->assertRedirect('/courses')
-        ->assertSessionHasErrors('promotion_ids');
+        ->assertSessionHasErrors('class_ids');
+
+    expect(Exercise::query()->count())->toBe(0);
+});
+
+it('rejects an older running promo when a newer promo is currently running', function () {
+    $coach = createExerciseControllerCoach();
+    $topic = createExerciseControllerTopic($coach);
+
+    $olderClass = createExerciseControllerClass(
+        promo: 5,
+        classNumber: 1,
+    );
+
+    $newerClass = createExerciseControllerClass(
+        promo: 6,
+        classNumber: 1,
+    );
+
+    assignExerciseControllerCoachToClass($coach, $olderClass);
+
+    $response = $this
+        ->actingAs($coach)
+        ->from('/courses')
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'status' => 'published',
+                'class_ids' => [$olderClass->id],
+            ]),
+        );
+
+    $response
+        ->assertRedirect('/courses')
+        ->assertSessionHasErrors('class_ids');
+
+    expect($newerClass->id)->not->toBe($olderClass->id)
+        ->and(Exercise::query()->count())->toBe(0);
+});
+
+it('rejects a class that has not started yet', function () {
+    $coach = createExerciseControllerCoach();
+    $topic = createExerciseControllerTopic($coach);
+
+    $futureClass = createExerciseControllerClass(
+        promo: 6,
+        startTime: today()->addDay()->toDateString(),
+        endTime: today()->addMonths(6)->toDateString(),
+    );
+
+    assignExerciseControllerCoachToClass($coach, $futureClass);
+
+    $response = $this
+        ->actingAs($coach)
+        ->from('/courses')
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'status' => 'published',
+                'class_ids' => [$futureClass->id],
+            ]),
+        );
+
+    $response
+        ->assertRedirect('/courses')
+        ->assertSessionHasErrors('class_ids');
 
     expect(Exercise::query()->count())->toBe(0);
 });
@@ -269,4 +354,32 @@ it('allows a github actions exercise without browser correction rules', function
                 ->correction_rules,
         )
         ->toBeNull();
+});
+
+it('allows an admin to publish to any current class', function () {
+    $admin = createExerciseControllerUser('admin');
+    $topic = createExerciseControllerTopic($admin);
+
+    $class = createExerciseControllerClass();
+
+    $response = $this
+        ->actingAs($admin)
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'status' => 'published',
+                'class_ids' => [$class->id],
+            ]),
+        );
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $exercise = Exercise::query()->firstOrFail();
+
+    $this->assertDatabaseHas('exercise_classes', [
+        'exercise_id' => $exercise->id,
+        'classes_id' => $class->id,
+    ]);
 });

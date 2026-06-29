@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Exercise;
+use App\Models\Classes;
+use App\Models\Role;
 use App\Models\Topic;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,38 +28,62 @@ class ExerciseController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'difficulty' => ['required', 'string', Rule::in([
-                'beginner',
-                'intermediate',
-                'advanced',
-            ])],
+
+            'difficulty' => [
+                'required',
+                'string',
+                Rule::in([
+                    'beginner',
+                    'intermediate',
+                    'advanced',
+                ]),
+            ],
+
             'xp_reward' => ['required', 'integer', 'min:0', 'max:1000000'],
+
             'order_index' => [
                 'required',
                 'integer',
                 'min:1',
                 Rule::unique('exercises', 'order_index')
-                    ->where(fn($query) => $query->where('topic_id', $topic->id)),
+                    ->where(fn ($query) => $query->where(
+                        'topic_id',
+                        $topic->id,
+                    )),
             ],
-            'correction_engine' => ['required', 'string', Rule::in([
-                'browser',
-                'github_actions',
-            ])],
+
+            'correction_engine' => [
+                'required',
+                'string',
+                Rule::in([
+                    'browser',
+                    'github_actions',
+                ]),
+            ],
+
             'exercise_type' => ['required', 'string', 'max:100'],
+
             'correction_rules' => ['nullable', 'array'],
-            'status' => ['required', 'string', Rule::in([
-                'draft',
-                'published',
-            ])],
-            'promotion_ids' => ['nullable', 'array'],
-            'promotion_ids.*' => [
+
+            'status' => [
+                'required',
+                'string',
+                Rule::in([
+                    'draft',
+                    'published',
+                ]),
+            ],
+
+            'class_ids' => ['nullable', 'array'],
+
+            'class_ids.*' => [
                 'integer',
                 'distinct',
-                Rule::exists('promotions', 'id'),
+                Rule::exists('classes', 'id'),
             ],
         ]);
 
-        $validator->after(function ($validator) use ($request, $course): void {
+        $validator->after(function ($validator) use ($request, $coach): void {
             if ($validator->errors()->isNotEmpty()) {
                 return;
             }
@@ -88,7 +113,6 @@ class ExerciseController extends Controller
                 return;
             }
 
-
             if (
                 $engine === 'browser'
                 && ! is_array($request->input('correction_rules'))
@@ -101,40 +125,36 @@ class ExerciseController extends Controller
                 return;
             }
 
-            $promotionIds = collect($request->input('promotion_ids', []))
-                ->map(fn($promotionId) => (int) $promotionId)
+            $classIds = collect($request->input('class_ids', []))
+                ->map(fn ($classId) => (int) $classId)
                 ->unique()
                 ->values();
 
             if (
                 $request->string('status')->toString() === 'published'
-                && $promotionIds->isEmpty()
+                && $classIds->isEmpty()
             ) {
                 $validator->errors()->add(
-                    'promotion_ids',
-                    'A published exercise must target at least one eligible promotion.',
+                    'class_ids',
+                    'A published exercise must target at least one current class.',
                 );
 
                 return;
             }
 
-            if ($promotionIds->isEmpty()) {
+            if ($classIds->isEmpty()) {
                 return;
             }
 
-            $eligiblePromotionIds = $course
-                ->publishablePromotions()
-                ->whereKey($promotionIds)
-                ->pluck('promotions.id')
-                ->map(fn($promotionId) => (int) $promotionId)
+            $eligibleClassIds = $this
+                ->eligibleCurrentClassIdsFor($coach)
+                ->intersect($classIds)
                 ->values();
 
-            if (
-                $eligiblePromotionIds->count() !== $promotionIds->count()
-            ) {
+            if ($eligibleClassIds->count() !== $classIds->count()) {
                 $validator->errors()->add(
-                    'promotion_ids',
-                    'Every selected promotion must be active and assigned to this course.',
+                    'class_ids',
+                    'Every selected class must be running, from the current promo, and assigned to you.',
                 );
             }
         });
@@ -157,9 +177,58 @@ class ExerciseController extends Controller
                 : null,
         ]);
 
-        $exercise->promotions()->sync($data['promotion_ids'] ?? []);
+        $exercise->classes()->sync($data['class_ids'] ?? []);
 
         return back()->with('success', 'Exercise saved successfully.');
+    }
+
+    private function eligibleCurrentClassIdsFor($user)
+    {
+        $runningClasses = Classes::query()
+            ->whereNotNull('promo')
+            ->whereNotNull('start_time')
+            ->whereDate('start_time', '<=', today())
+            ->whereNotNull('end_time')
+            ->whereDate('end_time', '>=', today());
+
+        $currentPromo = (clone $runningClasses)->max('promo');
+
+        if ($currentPromo === null) {
+            return collect();
+        }
+
+        $eligibleClasses = (clone $runningClasses)
+            ->where('promo', $currentPromo);
+
+        if (! $this->canTargetAnyCurrentClass($user)) {
+            $coachRoleId = Role::query()
+                ->where('role', 'coach')
+                ->value('id');
+
+            if (! $coachRoleId) {
+                return collect();
+            }
+
+            $assignedClassIds = $user
+                ->classes()
+                ->wherePivot('role_id', $coachRoleId)
+                ->pluck('classes.id');
+
+            $eligibleClasses->whereIn('classes.id', $assignedClassIds);
+        }
+
+        return $eligibleClasses
+            ->pluck('classes.id')
+            ->map(fn ($classId) => (int) $classId)
+            ->values();
+    }
+
+    private function canTargetAnyCurrentClass($user): bool
+    {
+        return $user
+            ->Roles()
+            ->whereIn('role', ['admin', 'super_admin'])
+            ->exists();
     }
 
     private function ensureCanManageExercises(Request $request)
@@ -168,7 +237,7 @@ class ExerciseController extends Controller
 
         abort_unless(
             $user
-                && $user->Roles()
+            && $user->Roles()
                 ->whereIn('role', ['admin', 'coach', 'super_admin'])
                 ->exists(),
             403,
