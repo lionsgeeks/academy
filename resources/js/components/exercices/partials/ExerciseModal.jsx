@@ -5,6 +5,7 @@ import {
     ChevronRight,
     ClipboardList,
     Plus,
+    Loader2,
     Save,
     Settings2,
     Sparkles,
@@ -16,7 +17,6 @@ import {
     DialogContent,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useExerciseAutosave } from '../hooks/useExerciseAutosave';
 import { DESCRIPTION_FORMATS } from './DescriptionEditor';
@@ -35,6 +35,12 @@ export const EMPTY_EXERCISE_FORM = {
     difficulty: '',
     xp_reward: 50,
     order_index: 1,
+
+    correction_engine: 'browser',
+    exercise_type: 'html',
+    status: 'draft',
+    promotion_ids: [],
+
     rules: null,
     rulesSource: 'paste',
     rulesFileName: '',
@@ -87,17 +93,49 @@ function validateStep(step, data) {
     const errors = {};
 
     if (step === 1) {
-        if (!data.title.trim()) errors.title = 'Title is required.';
+        if (!data.title.trim()) {
+            errors.title = 'Title is required.';
+        }
+
         if (!hasDescriptionContent(data)) {
             errors.description = 'Description is required.';
         }
     }
 
     if (step === 2) {
-        if (!data.difficulty) errors.difficulty = 'Difficulty is required.';
-        if (data.xp_reward < 0) errors.xp_reward = 'XP must be 0 or more.';
-        if (data.order_index < 1) errors.order_index = 'Order must be at least 1.';
-        if (!data.rules) errors.rules = 'Valid rules JSON is required.';
+        if (!data.difficulty) {
+            errors.difficulty = 'Difficulty is required.';
+        }
+
+        if (data.xp_reward < 0) {
+            errors.xp_reward = 'XP must be 0 or more.';
+        }
+
+        if (data.order_index < 1) {
+            errors.order_index = 'Order must be at least 1.';
+        }
+
+        if (!data.correction_engine) {
+            errors.correction_engine = 'Correction method is required.';
+        }
+
+        if (!data.exercise_type) {
+            errors.exercise_type = 'Exercise type is required.';
+        }
+
+        if (
+            data.correction_engine === 'browser'
+            && !data.rules
+        ) {
+            errors.correction_rules = 'Browser exercises require valid JSON rules.';
+        }
+
+        if (
+            data.status === 'published'
+            && (!data.promotion_ids || data.promotion_ids.length === 0)
+        ) {
+            errors.promotion_ids = 'Choose at least one active promotion before publishing.';
+        }
     }
 
     return errors;
@@ -106,19 +144,26 @@ function validateStep(step, data) {
 function buildPayload(data) {
     return {
         title: data.title,
-        description_format: data.description_format,
+
         description:
             data.description_format === DESCRIPTION_FORMATS.MARKDOWN
                 ? data.description_markdown
                 : data.description_html,
-        description_markdown: data.description_markdown,
-        description_html: data.description_html,
+
         difficulty: data.difficulty,
         xp_reward: data.xp_reward,
         order_index: data.order_index,
-        rules: data.rules,
-        rulesSource: data.rulesSource,
-        rulesFileName: data.rulesFileName,
+
+        correction_engine: data.correction_engine,
+        exercise_type: data.exercise_type,
+
+        correction_rules:
+            data.correction_engine === 'browser'
+                ? data.rules
+                : null,
+
+        status: data.status,
+        promotion_ids: data.promotion_ids ?? [],
     };
 }
 
@@ -130,9 +175,11 @@ export default function ExerciseModal({
     onSubmit,
     topicId,
     coachType = 'coding',
+    publishablePromotions = [],
 }) {
     const [step, setStep] = useState(1);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [data, setData] = useState({
         ...EMPTY_EXERCISE_FORM,
         ...initialData,
@@ -198,10 +245,52 @@ export default function ExerciseModal({
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        const payload = buildPayload(data);
-        onSubmit?.(payload);
-        clearDraft();
-        handleOpenChange(false);
+
+        const allErrors = {
+            ...validateStep(1, data),
+            ...validateStep(2, data),
+        };
+
+        if (Object.keys(allErrors).length > 0) {
+            setErrors(allErrors);
+
+            if (allErrors.title || allErrors.description) {
+                setStep(1);
+            } else {
+                setStep(2);
+            }
+
+            return;
+        }
+
+        if (!onSubmit) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        onSubmit(buildPayload(data), {
+            onSuccess: () => {
+                clearDraft();
+                setIsSubmitting(false);
+                handleOpenChange(false);
+            },
+
+            onError: (serverErrors = {}) => {
+                setErrors(serverErrors);
+                setIsSubmitting(false);
+
+                if (serverErrors.title || serverErrors.description) {
+                    setStep(1);
+                } else {
+                    setStep(2);
+                }
+            },
+
+            onFinish: () => {
+                setIsSubmitting(false);
+            },
+        });
     };
 
     const StepIcon = STEP_META[step].icon;
@@ -283,9 +372,15 @@ export default function ExerciseModal({
                                         data={data}
                                         errors={errors}
                                         onChange={updateField}
+                                        publishablePromotions={publishablePromotions}
                                     />
                                 )}
-                                {step === 3 && <StepReview data={data} />}
+                                {step === 3 && (
+                                    <StepReview
+                                        data={data}
+                                        publishablePromotions={publishablePromotions}
+                                    />
+                                )}
                             </motion.div>
                         </AnimatePresence>
                     </form>
@@ -331,24 +426,34 @@ export default function ExerciseModal({
                                 <Button
                                     type="submit"
                                     form="exercise-form"
-                                    className="gap-1.5 bg-dark text-light hover:bg-dark/85 dark:bg-alpha dark:text-beta dark:hover:bg-alpha/85"
+                                    disabled={isSubmitting}
+                                    className="gap-1.5 bg-dark text-light hover:bg-dark/85 disabled:opacity-60 dark:bg-alpha dark:text-beta dark:hover:bg-alpha/85"
                                 >
-                                    {isEditing ? (
+                                    {isSubmitting ? (
+                                        <Loader2 className="size-4 animate-spin" />
+                                    ) : isEditing ? (
                                         <Save className="size-4" />
                                     ) : (
                                         <Plus className="size-4" />
                                     )}
-                                    {isEditing ? (
+
+                                    {isSubmitting ? (
+                                        <TransText
+                                            en="Saving..."
+                                            fr="Enregistrement..."
+                                            ar="جارٍ الحفظ..."
+                                        />
+                                    ) : isEditing ? (
                                         <TransText
                                             en="Save changes"
-                                            fr="Save changes"
-                                            ar="Save changes"
+                                            fr="Enregistrer"
+                                            ar="حفظ التعديلات"
                                         />
                                     ) : (
                                         <TransText
                                             en="Create exercise"
-                                            fr="Create exercise"
-                                            ar="Create exercise"
+                                            fr="Créer l'exercice"
+                                            ar="إنشاء التمرين"
                                         />
                                     )}
                                 </Button>
