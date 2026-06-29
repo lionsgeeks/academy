@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\ExerciseController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -10,4 +11,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('courses/{course}', [CourseController::class, 'update'])->name('courses.update');
     Route::patch('courses/{course}/status', [CourseController::class, 'updateStatus'])->name('courses.update-status');
     Route::delete('courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
+    Route::post('topics/{topic}/exercises',[ExerciseController::class, 'store'],)->name('topics.exercises.store');
 });
