@@ -3,6 +3,7 @@
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\StudentExerciseController;
+use App\Http\Controllers\StudentExerciseAttemptController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -14,5 +15,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('courses/{course}', [CourseController::class, 'destroy'])->name('courses.destroy');
     Route::post('topics/{topic}/exercises', [ExerciseController::class, 'store'],)->name('topics.exercises.store');
     Route::get('student/exercises', [StudentExerciseController::class, 'index'],)->name('student.exercises.index');
-    Route::get('student/exercises/{exercise}',[StudentExerciseController::class, 'show'],)->name('student.exercises.show');
+    Route::get('student/exercises/{exercise}', [StudentExerciseController::class, 'show'],)->name('student.exercises.show');
+    Route::post(
+        'student/exercises/{exercise}/attempts',
+        [StudentExerciseAttemptController::class, 'store'],
+    )->name('student.exercises.attempts.store');
 });

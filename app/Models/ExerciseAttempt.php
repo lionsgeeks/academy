@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'status',
     'source_type',
     'source_path',
+    'source_code',
     'repository_url',
     'branch',
     'commit_sha',
@@ -39,6 +40,7 @@ class ExerciseAttempt extends Model
     protected function casts(): array
     {
         return [
+            'source_code' => 'array',
             'passed' => 'boolean',
             'feedback' => 'array',
             'submitted_at' => 'datetime',
