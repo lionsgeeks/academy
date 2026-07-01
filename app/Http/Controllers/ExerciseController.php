@@ -68,6 +68,31 @@ class ExerciseController extends Controller
 
             'correction_rules' => ['nullable', 'array'],
 
+            'github_repo_url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                'url',
+            ],
+
+            'github_workflow' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'github_test_suite' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'github_branch_prefix' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
             'status' => [
                 'required',
                 'string',
@@ -127,6 +152,17 @@ class ExerciseController extends Controller
                 }
             }
 
+            if ($engine === 'github_actions') {
+                $this->validateGithubActionsConfiguration(
+                    $validator,
+                    $request,
+                );
+
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+            }
+
             $classIds = collect($request->input('class_ids', []))
                 ->map(fn($classId) => (int) $classId)
                 ->unique()
@@ -172,6 +208,21 @@ class ExerciseController extends Controller
             'correction_engine' => $data['correction_engine'],
             'exercise_type' => $data['exercise_type'],
             'correction_rules' => $data['correction_rules'] ?? null,
+            'github_repo_url' => $data['correction_engine'] === 'github_actions'
+                ? ($data['github_repo_url'] ?? null)
+                : null,
+
+            'github_workflow' => $data['correction_engine'] === 'github_actions'
+                ? ($data['github_workflow'] ?? null)
+                : null,
+
+            'github_test_suite' => $data['correction_engine'] === 'github_actions'
+                ? ($data['github_test_suite'] ?? null)
+                : null,
+
+            'github_branch_prefix' => $data['correction_engine'] === 'github_actions'
+                ? ($data['github_branch_prefix'] ?? null)
+                : null,
             'status' => $data['status'],
             'passing_score' => 70,
             'published_at' => $data['status'] === 'published'
@@ -250,6 +301,25 @@ class ExerciseController extends Controller
                     "correction_rules.checks.{$index}.points",
                     'The check points must be a positive integer.',
                 );
+            }
+        }
+    }
+
+
+    private function validateGithubActionsConfiguration(
+        $validator,
+        Request $request,
+    ): void {
+        $requiredFields = [
+            'github_repo_url' => 'A GitHub repository URL is required.',
+            'github_workflow' => 'A GitHub workflow is required.',
+            'github_test_suite' => 'A GitHub test suite is required.',
+            'github_branch_prefix' => 'A GitHub branch prefix is required.',
+        ];
+
+        foreach ($requiredFields as $field => $message) {
+            if (! $request->filled($field)) {
+                $validator->errors()->add($field, $message);
             }
         }
     }

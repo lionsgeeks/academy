@@ -375,7 +375,7 @@ it('rejects browser correction rules without valid checks', function () {
     expect(Exercise::query()->count())->toBe(0);
 });
 
-it('allows a github actions exercise without browser correction rules', function () {
+it('allows a github actions exercise with required configuration', function () {
     $coach = createExerciseControllerCoach();
     $topic = createExerciseControllerTopic($coach);
 
@@ -387,6 +387,10 @@ it('allows a github actions exercise without browser correction rules', function
                 'correction_engine' => 'github_actions',
                 'exercise_type' => 'laravel',
                 'correction_rules' => null,
+                'github_repo_url' => 'https://github.com/academy/laravel-posts-crud',
+                'github_workflow' => 'evaluate-laravel.yml',
+                'github_test_suite' => 'laravel-posts-crud',
+                'github_branch_prefix' => 'student-',
             ]),
         );
 
@@ -394,13 +398,51 @@ it('allows a github actions exercise without browser correction rules', function
         ->assertSessionHasNoErrors()
         ->assertRedirect();
 
-    expect(Exercise::query()->count())->toBe(1)
-        ->and(
-            Exercise::query()
-                ->firstOrFail()
-                ->correction_rules,
-        )
-        ->toBeNull();
+    $exercise = Exercise::query()->firstOrFail();
+
+    expect($exercise->correction_engine)->toBe('github_actions')
+        ->and($exercise->exercise_type)->toBe('laravel')
+        ->and($exercise->correction_rules)->toBeNull()
+        ->and($exercise->github_repo_url)
+        ->toBe('https://github.com/academy/laravel-posts-crud')
+        ->and($exercise->github_workflow)
+        ->toBe('evaluate-laravel.yml')
+        ->and($exercise->github_test_suite)
+        ->toBe('laravel-posts-crud')
+        ->and($exercise->github_branch_prefix)
+        ->toBe('student-');
+});
+
+it('rejects a github actions exercise without complete configuration', function () {
+    $coach = createExerciseControllerCoach();
+    $topic = createExerciseControllerTopic($coach);
+
+    $response = $this
+        ->actingAs($coach)
+        ->from('/courses')
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'correction_engine' => 'github_actions',
+                'exercise_type' => 'laravel',
+                'correction_rules' => null,
+                'github_repo_url' => null,
+                'github_workflow' => null,
+                'github_test_suite' => null,
+                'github_branch_prefix' => null,
+            ]),
+        );
+
+    $response
+        ->assertRedirect('/courses')
+        ->assertSessionHasErrors([
+            'github_repo_url',
+            'github_workflow',
+            'github_test_suite',
+            'github_branch_prefix',
+        ]);
+
+    expect(Exercise::query()->count())->toBe(0);
 });
 
 it('allows an admin to publish to any current class', function () {
