@@ -146,6 +146,42 @@ function makeStudentAttemptExerciseVisibleTo(
     $exercise->classes()->attach($class->id);
 }
 
+function createStudentAttemptHistoryRecord(
+    User $student,
+    Exercise $exercise,
+    int $attemptNumber,
+    array $overrides = [],
+): ExerciseAttempt {
+    return ExerciseAttempt::query()->create(array_merge([
+        'exercise_id' => $exercise->id,
+        'user_id' => $student->id,
+        'attempt_number' => $attemptNumber,
+        'status' => 'completed',
+        'source_type' => 'browser_code',
+        'source_code' => [
+            'html' => "<main><h1>Attempt {$attemptNumber}</h1></main>",
+        ],
+        'score' => 100,
+        'passed' => true,
+        'feedback' => [
+            'earned_points' => 100,
+            'total_points' => 100,
+            'checks' => [
+                [
+                    'language' => 'html',
+                    'contains' => '<main',
+                    'points' => 100,
+                    'passed' => true,
+                    'message' => 'Main element found.',
+                ],
+            ],
+        ],
+        'submitted_at' => now(),
+        'started_at' => now(),
+        'completed_at' => now(),
+    ], $overrides));
+}
+
 it('creates and corrects a browser code attempt for a visible exercise', function () {
     $student = createStudentAttemptUser();
     $topic = createStudentAttemptTopic();
@@ -386,4 +422,94 @@ it('forbids a non-student from creating an attempt', function () {
         ->assertForbidden();
 
     expect(ExerciseAttempt::query()->count())->toBe(0);
+});
+
+it('returns only the current student attempts newest first', function () {
+    $student = createStudentAttemptUser();
+    $otherStudent = createStudentAttemptUser();
+    $topic = createStudentAttemptTopic();
+
+    $exercise = createStudentAttemptExercise($topic);
+
+    makeStudentAttemptExerciseVisibleTo($exercise, $student);
+
+    createStudentAttemptHistoryRecord($student, $exercise, 1);
+
+    createStudentAttemptHistoryRecord($student, $exercise, 2, [
+        'score' => 50,
+        'passed' => false,
+        'feedback' => [
+            'earned_points' => 50,
+            'total_points' => 100,
+            'checks' => [
+                [
+                    'language' => 'html',
+                    'contains' => '<main',
+                    'points' => 50,
+                    'passed' => true,
+                    'message' => 'Main element found.',
+                ],
+                [
+                    'language' => 'html',
+                    'contains' => '<h1',
+                    'points' => 50,
+                    'passed' => false,
+                    'message' => 'Add a main heading.',
+                ],
+            ],
+        ],
+    ]);
+
+    createStudentAttemptHistoryRecord($otherStudent, $exercise, 1);
+
+    $response = $this
+        ->actingAs($student)
+        ->getJson(
+            route('student.exercises.attempts.index', $exercise),
+        );
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.attempt_number', 2)
+        ->assertJsonPath('data.0.score', 50)
+        ->assertJsonPath('data.0.passed', false)
+        ->assertJsonPath('data.1.attempt_number', 1)
+        ->assertJsonPath('data.1.score', 100)
+        ->assertJsonPath('data.1.passed', true);
+
+    $attempts = $response->json('data');
+
+    expect($attempts[0])->not->toHaveKey('source_code')
+        ->and($attempts[0]['feedback']['checks'][0])
+        ->not->toHaveKey('contains')
+        ->and($attempts[1])->not->toHaveKey('source_code');
+});
+
+it('returns not found for attempt history when the exercise is not visible', function () {
+    $student = createStudentAttemptUser();
+    $topic = createStudentAttemptTopic();
+
+    $exercise = createStudentAttemptExercise($topic);
+
+    $this
+        ->actingAs($student)
+        ->getJson(
+            route('student.exercises.attempts.index', $exercise),
+        )
+        ->assertNotFound();
+});
+
+it('forbids a non-student from reading attempt history', function () {
+    $coach = createStudentAttemptUser('coach');
+    $topic = createStudentAttemptTopic();
+
+    $exercise = createStudentAttemptExercise($topic);
+
+    $this
+        ->actingAs($coach)
+        ->getJson(
+            route('student.exercises.attempts.index', $exercise),
+        )
+        ->assertForbidden();
 });

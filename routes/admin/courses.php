@@ -20,4 +20,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'student/exercises/{exercise}/attempts',
         [StudentExerciseAttemptController::class, 'store'],
     )->name('student.exercises.attempts.store');
+    Route::get(
+        'student/exercises/{exercise}/attempts',
+        [StudentExerciseAttemptController::class, 'index'],
+    )->name('student.exercises.attempts.index');
 });

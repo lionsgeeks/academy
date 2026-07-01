@@ -14,6 +14,33 @@ use Illuminate\Support\Facades\Validator;
 
 class StudentExerciseAttemptController extends Controller
 {
+
+    public function index(
+        Request $request,
+        Exercise $exercise,
+        StudentExerciseVisibilityService $exerciseVisibility,
+    ): JsonResponse {
+        $student = $this->ensureStudent($request);
+
+        $visibleExercise = $exerciseVisibility
+            ->visibleExerciseFor($student, $exercise);
+
+        abort_unless($visibleExercise, 404);
+
+        $attempts = ExerciseAttempt::query()
+            ->where('user_id', $student->id)
+            ->where('exercise_id', $visibleExercise->id)
+            ->orderByDesc('attempt_number')
+            ->get();
+
+        return response()->json([
+            'data' => $attempts
+                ->map(
+                    fn(ExerciseAttempt $attempt) => $this->attemptPayload($attempt),
+                )
+                ->values(),
+        ]);
+    }
     public function store(
         Request $request,
         Exercise $exercise,
