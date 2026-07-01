@@ -1,9 +1,0 @@
-export { default as ConceptTopbar } from './partials/ConceptTopbar';
-export { default as CourseStructureSidebar } from './partials/CourseStructureSidebar';
-export { default as VideoPlayer } from './partials/VideoPlayer';
-export { default as VideoInput } from './partials/VideoInput';
-export { default as LessonTabs } from './partials/LessonTabs';
-export { default as ResourcesTab } from './partials/ResourcesTab';
-export { default as VideoSection } from './partials/VideoSection';
-export { default as TopicWorkspace } from './partials/TopicWorkspace';
-export { default as TopicSettingsTab } from './partials/TopicSettingsTab';
