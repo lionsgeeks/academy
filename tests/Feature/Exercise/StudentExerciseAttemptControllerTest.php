@@ -112,7 +112,20 @@ function createStudentAttemptExercise(
             : $exerciseType,
         'correction_rules' => $engine === 'browser'
             ? [
-                'requiredFiles' => ['index.html'],
+                'checks' => [
+                    [
+                        'language' => 'html',
+                        'contains' => '<main',
+                        'points' => 50,
+                        'message' => 'Add a semantic main element.',
+                    ],
+                    [
+                        'language' => 'html',
+                        'contains' => '<h1',
+                        'points' => 50,
+                        'message' => 'Add a main heading.',
+                    ],
+                ],
             ]
             : null,
         'status' => 'published',
@@ -133,7 +146,7 @@ function makeStudentAttemptExerciseVisibleTo(
     $exercise->classes()->attach($class->id);
 }
 
-it('creates a queued browser code attempt for a visible exercise', function () {
+it('creates and corrects a browser code attempt for a visible exercise', function () {
     $student = createStudentAttemptUser();
     $topic = createStudentAttemptTopic();
 
@@ -156,10 +169,23 @@ it('creates a queued browser code attempt for a visible exercise', function () {
         ->assertCreated()
         ->assertJsonPath('data.exercise_id', $exercise->id)
         ->assertJsonPath('data.attempt_number', 1)
-        ->assertJsonPath('data.status', 'queued')
-        ->assertJsonPath('data.source_type', 'browser_code');
+        ->assertJsonPath('data.status', 'completed')
+        ->assertJsonPath('data.source_type', 'browser_code')
+        ->assertJsonPath('data.score', 100)
+        ->assertJsonPath('data.passed', true)
+        ->assertJsonPath('data.feedback.earned_points', 100)
+        ->assertJsonPath('data.feedback.total_points', 100);
 
     $attempt = ExerciseAttempt::query()->firstOrFail();
+    expect($attempt->status)->toBe('completed')
+        ->and($attempt->score)->toBe(100)
+        ->and($attempt->passed)->toBeTrue()
+        ->and($attempt->source_code)->toBe([
+            'html' => '<main><h1>Hello Academy</h1></main>',
+        ])
+        ->and($attempt->repository_url)->toBeNull()
+        ->and($attempt->branch)->toBeNull()
+        ->and($attempt->source_path)->toBeNull();
 
     expect($attempt->source_code)->toBe([
         'html' => '<main><h1>Hello Academy</h1></main>',
@@ -193,7 +219,6 @@ it('rejects browser source data that is missing required code', function () {
         ]);
 
     expect(ExerciseAttempt::query()->count())->toBe(0);
-
 });
 
 it('creates a queued GitHub repository attempt for a visible GitHub exercise', function () {

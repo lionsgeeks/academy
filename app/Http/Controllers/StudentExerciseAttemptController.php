@@ -7,6 +7,7 @@ use App\Models\ExerciseAttempt;
 use App\Models\User;
 use App\Services\Exercises\StudentExerciseAttemptService;
 use App\Services\Exercises\StudentExerciseVisibilityService;
+use App\Services\Exercises\BrowserExerciseCorrectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -18,6 +19,7 @@ class StudentExerciseAttemptController extends Controller
         Exercise $exercise,
         StudentExerciseVisibilityService $exerciseVisibility,
         StudentExerciseAttemptService $attemptService,
+        BrowserExerciseCorrectionService $browserCorrection,
     ): JsonResponse {
         $student = $this->ensureStudent($request);
 
@@ -137,6 +139,10 @@ class StudentExerciseAttemptController extends Controller
             $validator->validated(),
         );
 
+        if ($visibleExercise->correction_engine === 'browser') {
+            $attempt = $browserCorrection->correct($attempt);
+        }
+
         return response()->json([
             'data' => $this->attemptPayload($attempt),
         ], 201);
@@ -148,7 +154,7 @@ class StudentExerciseAttemptController extends Controller
 
         abort_unless(
             $student
-            && $student->Roles()
+                && $student->Roles()
                 ->where('role', 'student')
                 ->exists(),
             403,
@@ -194,10 +200,45 @@ class StudentExerciseAttemptController extends Controller
             'attempt_number' => $attempt->attempt_number,
             'status' => $attempt->status,
             'source_type' => $attempt->source_type,
+            'score' => $attempt->score,
+            'passed' => $attempt->passed,
+            'feedback' => $this->publicFeedbackPayload($attempt),
             'repository_url' => $attempt->repository_url,
             'branch' => $attempt->branch,
             'commit_sha' => $attempt->commit_sha,
             'submitted_at' => $attempt->submitted_at?->toISOString(),
+            'completed_at' => $attempt->completed_at?->toISOString(),
+        ];
+    }
+
+    private function publicFeedbackPayload(
+        ExerciseAttempt $attempt,
+    ): ?array {
+        $feedback = $attempt->feedback;
+
+        if (! is_array($feedback)) {
+            return null;
+        }
+
+        $checks = [];
+
+        foreach ($feedback['checks'] ?? [] as $check) {
+            if (! is_array($check)) {
+                continue;
+            }
+
+            $checks[] = [
+                'language' => $check['language'] ?? null,
+                'points' => $check['points'] ?? null,
+                'passed' => $check['passed'] ?? false,
+                'message' => $check['message'] ?? null,
+            ];
+        }
+
+        return [
+            'earned_points' => $feedback['earned_points'] ?? 0,
+            'total_points' => $feedback['total_points'] ?? 0,
+            'checks' => $checks,
         ];
     }
 }

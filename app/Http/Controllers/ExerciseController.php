@@ -116,16 +116,15 @@ class ExerciseController extends Controller
                 return;
             }
 
-            if (
-                $engine === 'browser'
-                && ! is_array($request->input('correction_rules'))
-            ) {
-                $validator->errors()->add(
-                    'correction_rules',
-                    'Browser exercises require correction rules.',
+            if ($engine === 'browser') {
+                $this->validateBrowserCorrectionRules(
+                    $validator,
+                    $request,
                 );
 
-                return;
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
             }
 
             $classIds = collect($request->input('class_ids', []))
@@ -183,6 +182,76 @@ class ExerciseController extends Controller
         $exercise->classes()->sync($data['class_ids'] ?? []);
 
         return back()->with('success', 'Exercise saved successfully.');
+    }
+
+
+    private function validateBrowserCorrectionRules(
+        $validator,
+        Request $request,
+    ): void {
+        $rules = $request->input('correction_rules');
+
+        if (! is_array($rules)) {
+            $validator->errors()->add(
+                'correction_rules',
+                'Browser exercises require correction rules.',
+            );
+
+            return;
+        }
+
+        $checks = $rules['checks'] ?? null;
+
+        if (! is_array($checks) || $checks === []) {
+            $validator->errors()->add(
+                'correction_rules',
+                'Browser correction rules require at least one check.',
+            );
+
+            return;
+        }
+
+        $allowedLanguages = [
+            'html',
+            'css',
+            'javascript',
+        ];
+
+        foreach ($checks as $index => $check) {
+            if (! is_array($check)) {
+                $validator->errors()->add(
+                    "correction_rules.checks.{$index}",
+                    'Each browser correction check must be an object.',
+                );
+
+                continue;
+            }
+
+            $language = $check['language'] ?? null;
+            $contains = $check['contains'] ?? null;
+            $points = $check['points'] ?? null;
+
+            if (! in_array($language, $allowedLanguages, true)) {
+                $validator->errors()->add(
+                    "correction_rules.checks.{$index}.language",
+                    'The check language must be html, css, or javascript.',
+                );
+            }
+
+            if (! is_string($contains) || trim($contains) === '') {
+                $validator->errors()->add(
+                    "correction_rules.checks.{$index}.contains",
+                    'The check must contain required source code text.',
+                );
+            }
+
+            if (! is_int($points) || $points <= 0) {
+                $validator->errors()->add(
+                    "correction_rules.checks.{$index}.points",
+                    'The check points must be a positive integer.',
+                );
+            }
+        }
     }
 
 

@@ -61,7 +61,20 @@ function createExerciseAttemptFoundationExercise(): Exercise
         'correction_engine' => 'browser',
         'exercise_type' => 'html',
         'correction_rules' => [
-            'requiredFiles' => ['index.html'],
+            'checks' => [
+                [
+                    'language' => 'html',
+                    'contains' => '<main',
+                    'points' => 50,
+                    'message' => 'Add a semantic main element.',
+                ],
+                [
+                    'language' => 'html',
+                    'contains' => '<h1',
+                    'points' => 50,
+                    'message' => 'Add a main heading.',
+                ],
+            ],
         ],
         'status' => 'published',
         'passing_score' => 70,
@@ -78,13 +91,15 @@ function createExerciseAttemptFoundationAttempt(
         'exercise_id' => $exercise->id,
         'user_id' => $student->id,
         'attempt_number' => $attemptNumber,
-        'source_type' => 'browser_archive',
-        'source_path' => "exercise-attempts/{$student->id}/attempt-{$attemptNumber}.zip",
+        'source_type' => 'browser_code',
+        'source_code' => [
+            'html' => '<main><h1>Attempt ' . $attemptNumber . '</h1></main>',
+        ],
         'submitted_at' => now(),
     ]);
 }
 
-it('stores a queued browser archive attempt with its user and exercise', function () {
+it('stores a queued browser code attempt with its user and exercise', function () {
     $student = createExerciseAttemptFoundationUser();
     $exercise = createExerciseAttemptFoundationExercise();
 
@@ -100,13 +115,17 @@ it('stores a queued browser archive attempt with its user and exercise', functio
         ->and($attempt->exercise->id)->toBe($exercise->id)
         ->and($attempt->user->id)->toBe($student->id);
 
+    expect($attempt->source_code)->toBe([
+        'html' => '<main><h1>Attempt 1</h1></main>',
+    ]);
+
     $this->assertDatabaseHas('exercise_attempts', [
         'id' => $attempt->id,
         'exercise_id' => $exercise->id,
         'user_id' => $student->id,
         'attempt_number' => 1,
         'status' => 'queued',
-        'source_type' => 'browser_archive',
+        'source_type' => 'browser_code',
     ]);
 });
 

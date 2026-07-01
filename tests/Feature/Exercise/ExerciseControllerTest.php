@@ -106,8 +106,20 @@ function validExercisePayload(array $overrides = []): array
         'correction_engine' => 'browser',
         'exercise_type' => 'html',
         'correction_rules' => [
-            'requiredFiles' => ['index.html'],
-            'minimumScore' => 70,
+            'checks' => [
+                [
+                    'language' => 'html',
+                    'contains' => '<main',
+                    'points' => 50,
+                    'message' => 'Add a semantic main element.',
+                ],
+                [
+                    'language' => 'html',
+                    'contains' => '<h1',
+                    'points' => 50,
+                    'message' => 'Add a main heading.',
+                ],
+            ],
         ],
         'status' => 'draft',
         'class_ids' => [],
@@ -141,8 +153,20 @@ it('allows a course owner to publish an exercise for an assigned current class',
         ->and($exercise->correction_engine)->toBe('browser')
         ->and($exercise->exercise_type)->toBe('html')
         ->and($exercise->correction_rules)->toBe([
-            'requiredFiles' => ['index.html'],
-            'minimumScore' => 70,
+            'checks' => [
+                [
+                    'language' => 'html',
+                    'contains' => '<main',
+                    'points' => 50,
+                    'message' => 'Add a semantic main element.',
+                ],
+                [
+                    'language' => 'html',
+                    'contains' => '<h1',
+                    'points' => 50,
+                    'message' => 'Add a main heading.',
+                ],
+            ],
         ])
         ->and($exercise->status)->toBe('published')
         ->and($exercise->published_at)->not->toBeNull()
@@ -318,6 +342,29 @@ it('rejects a browser exercise without correction rules', function () {
             route('topics.exercises.store', $topic),
             validExercisePayload([
                 'correction_rules' => null,
+            ]),
+        );
+
+    $response
+        ->assertRedirect('/courses')
+        ->assertSessionHasErrors('correction_rules');
+
+    expect(Exercise::query()->count())->toBe(0);
+});
+
+it('rejects browser correction rules without valid checks', function () {
+    $coach = createExerciseControllerCoach();
+    $topic = createExerciseControllerTopic($coach);
+
+    $response = $this
+        ->actingAs($coach)
+        ->from('/courses')
+        ->post(
+            route('topics.exercises.store', $topic),
+            validExercisePayload([
+                'correction_rules' => [
+                    'requiredFiles' => ['index.html'],
+                ],
             ]),
         );
 
