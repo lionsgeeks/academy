@@ -10,7 +10,7 @@ class ConceptBuilderController extends Controller
 {
     public function create()
     {
-        return Inertia::render('Concept', [
+        return Inertia::render('Concepts/index', [
             'concept' => null,
             'topics' => [],
         ]);
@@ -29,7 +29,7 @@ class ConceptBuilderController extends Controller
             'course_id' => $validated['course_id'],
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'order_index' => Concept::where('course_id', $validated['course_id'])->max('order_index') + 1,
+            'order_index' => (Concept::where('course_id', $validated['course_id'])->max('order_index') ?? 0) + 1,
         ]);
 
         return redirect()->route('concept.edit', $concept);
@@ -39,7 +39,7 @@ class ConceptBuilderController extends Controller
     {
         $concept->load('topics.lessons');
 
-        return Inertia::render('Concept', [
+        return Inertia::render('Concepts/index', [
             'concept' => $concept,
             'topics' => $concept->topics,
         ]);
