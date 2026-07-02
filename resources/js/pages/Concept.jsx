@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import {
-    ConceptTopbar,
-    CourseStructureSidebar,
-    TopicWorkspace,
-} from '@/components/concept-builder';
+import ConceptTopbar from './Concepts/partials/ConceptTopbar';
+import CourseStructureSidebar from './Concepts/partials/CourseStructureSidebar';
+import TopicWorkspace from './Concepts/partials/TopicWorkspace';
 
 export default function Concept() {
     const { concept: serverConcept, topics: serverTopics = [] } = usePage().props;
