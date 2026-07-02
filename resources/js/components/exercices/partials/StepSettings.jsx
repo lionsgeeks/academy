@@ -510,23 +510,143 @@ export default function StepSettings({
                     onChange={onChange}
                 />
             ) : (
-                <div className="rounded-xl border border-beta/10 bg-beta/5 px-4 py-3 text-sm text-beta/60 dark:border-light/10 dark:bg-light/5 dark:text-light/60">
-                    <div className="flex items-center gap-2 font-medium text-beta dark:text-light">
-                        <Github className="size-4 text-alpha" />
-                        <TransText
-                            en="GitHub Actions correction"
-                            fr="Correction GitHub Actions"
-                            ar="تصحيح GitHub Actions"
-                        />
+                <div className="space-y-4 rounded-xl border border-alpha/25 bg-alpha/5 p-4">
+                    <div className="flex items-start gap-2">
+                        <Github className="mt-0.5 size-4 text-alpha" />
+
+                        <div>
+                            <p className="text-sm font-medium text-beta dark:text-light">
+                                <TransText
+                                    en="GitHub Actions runner configuration"
+                                    fr="Configuration du runner GitHub Actions"
+                                    ar="إعدادات مشغل GitHub Actions"
+                                />
+                            </p>
+
+                            <p className="mt-0.5 text-xs leading-5 text-beta/55 dark:text-light/55">
+                                <TransText
+                                    en="These values stay optional while the exercise is a draft. They are required before publishing."
+                                    fr="Ces valeurs restent facultatives tant que l'exercice est un brouillon. Elles sont requises avant la publication."
+                                    ar="تبقى هذه القيم اختيارية ما دام التمرين مسودة، وتصبح مطلوبة قبل النشر."
+                                />
+                            </p>
+                        </div>
                     </div>
 
-                    <p className="mt-1 text-xs leading-5">
-                        <TransText
-                            en="Browser JSON rules are not required for this exercise type. Repository and workflow configuration will be added in the GitHub Actions task."
-                            fr="Les règles JSON du navigateur ne sont pas requises pour ce type d'exercice. La configuration du dépôt et du workflow sera ajoutée dans la tâche GitHub Actions."
-                            ar="قواعد JSON الخاصة بالمتصفح ليست مطلوبة لهذا النوع. سيتم إضافة إعدادات المستودع وWorkflow في مهمة GitHub Actions."
+                    <ExerciseField
+                        id="github_repo_url"
+                        label={
+                            <TransText
+                                en="Trusted runner repository URL"
+                                fr="URL du dépôt runner approuvé"
+                                ar="رابط مستودع المشغل الموثوق"
+                            />
+                        }
+                        error={errors.github_repo_url}
+                    >
+                        <Input
+                            id="github_repo_url"
+                            type="url"
+                            placeholder="https://github.com/academy/laravel-posts-crud"
+                            value={data.github_repo_url ?? ''}
+                            onChange={(event) =>
+                                onChange('github_repo_url', event.target.value)
+                            }
+                            className={inputClass}
                         />
-                    </p>
+                    </ExerciseField>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <ExerciseField
+                            id="github_runner_ref"
+                            label={
+                                <TransText
+                                    en="Runner branch or ref"
+                                    fr="Branche ou ref du runner"
+                                    ar="فرع أو ref المشغل"
+                                />
+                            }
+                            error={errors.github_runner_ref}
+                        >
+                            <Input
+                                id="github_runner_ref"
+                                placeholder="main"
+                                value={data.github_runner_ref ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_runner_ref', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+
+                        <ExerciseField
+                            id="github_workflow"
+                            label={
+                                <TransText
+                                    en="Workflow filename"
+                                    fr="Nom du fichier workflow"
+                                    ar="اسم ملف workflow"
+                                />
+                            }
+                            error={errors.github_workflow}
+                        >
+                            <Input
+                                id="github_workflow"
+                                placeholder="evaluate-laravel.yml"
+                                value={data.github_workflow ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_workflow', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <ExerciseField
+                            id="github_test_suite"
+                            label={
+                                <TransText
+                                    en="Test suite name"
+                                    fr="Nom de la suite de tests"
+                                    ar="اسم مجموعة الاختبارات"
+                                />
+                            }
+                            error={errors.github_test_suite}
+                        >
+                            <Input
+                                id="github_test_suite"
+                                placeholder="laravel-posts-crud"
+                                value={data.github_test_suite ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_test_suite', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+
+                        <ExerciseField
+                            id="github_branch_prefix"
+                            label={
+                                <TransText
+                                    en="Required student branch prefix"
+                                    fr="Préfixe de branche étudiant requis"
+                                    ar="بادئة فرع الطالب المطلوبة"
+                                />
+                            }
+                            error={errors.github_branch_prefix}
+                        >
+                            <Input
+                                id="github_branch_prefix"
+                                placeholder="student-"
+                                value={data.github_branch_prefix ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_branch_prefix', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+                    </div>
                 </div>
             )}
         </div>

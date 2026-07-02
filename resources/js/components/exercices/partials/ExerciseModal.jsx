@@ -44,6 +44,11 @@ export const EMPTY_EXERCISE_FORM = {
     rules: null,
     rulesSource: 'paste',
     rulesFileName: '',
+    github_repo_url: '',
+    github_runner_ref: '',
+    github_workflow: '',
+    github_test_suite: '',
+    github_branch_prefix: '',
 };
 
 const STEP_META = {
@@ -131,6 +136,25 @@ function validateStep(step, data) {
         }
 
         if (
+            data.correction_engine === 'github_actions'
+            && data.status === 'published'
+        ) {
+            const githubFields = {
+                github_repo_url: 'Runner repository URL is required before publishing.',
+                github_runner_ref: 'Runner branch or ref is required before publishing.',
+                github_workflow: 'Workflow filename is required before publishing.',
+                github_test_suite: 'Test suite name is required before publishing.',
+                github_branch_prefix: 'Student branch prefix is required before publishing.',
+            };
+
+            Object.entries(githubFields).forEach(([field, message]) => {
+                if (!String(data[field] ?? '').trim()) {
+                    errors[field] = message;
+                }
+            });
+        }
+
+        if (
             data.status === 'published'
             && (!data.class_ids || data.class_ids.length === 0)
         ) {
@@ -140,6 +164,7 @@ function validateStep(step, data) {
 
     return errors;
 }
+
 
 function buildPayload(data) {
     return {
@@ -160,6 +185,31 @@ function buildPayload(data) {
         correction_rules:
             data.correction_engine === 'browser'
                 ? data.rules
+                : null,
+
+        github_repo_url:
+            data.correction_engine === 'github_actions'
+                ? String(data.github_repo_url ?? '').trim() || null
+                : null,
+
+        github_runner_ref:
+            data.correction_engine === 'github_actions'
+                ? String(data.github_runner_ref ?? '').trim() || null
+                : null,
+
+        github_workflow:
+            data.correction_engine === 'github_actions'
+                ? String(data.github_workflow ?? '').trim() || null
+                : null,
+
+        github_test_suite:
+            data.correction_engine === 'github_actions'
+                ? String(data.github_test_suite ?? '').trim() || null
+                : null,
+
+        github_branch_prefix:
+            data.correction_engine === 'github_actions'
+                ? String(data.github_branch_prefix ?? '').trim() || null
                 : null,
 
         status: data.status,

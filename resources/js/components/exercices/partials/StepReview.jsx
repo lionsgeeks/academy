@@ -282,6 +282,90 @@ export default function StepReview({
                 </div>
             </ReviewSection>
 
+                          {!isBrowser && (
+                <>
+                    <Separator className="bg-beta/8 dark:bg-light/8" />
+
+                    <ReviewSection
+                        icon={Github}
+                        label={
+                            <TransText
+                                en="GitHub runner configuration"
+                                fr="Configuration du runner GitHub"
+                                ar="إعدادات مشغل GitHub"
+                            />
+                        }
+                    >
+                        <div className="space-y-3 rounded-xl border border-alpha/25 bg-alpha/5 p-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <MetricCard
+                                    icon={Github}
+                                    label={
+                                        <TransText
+                                            en="Runner ref"
+                                            fr="Ref du runner"
+                                            ar="مرجع المشغل"
+                                        />
+                                    }
+                                    value={data.github_runner_ref || '—'}
+                                />
+
+                                <MetricCard
+                                    icon={FileJson}
+                                    label={
+                                        <TransText
+                                            en="Workflow"
+                                            fr="Workflow"
+                                            ar="Workflow"
+                                        />
+                                    }
+                                    value={data.github_workflow || '—'}
+                                />
+
+                                <MetricCard
+                                    icon={Braces}
+                                    label={
+                                        <TransText
+                                            en="Test suite"
+                                            fr="Suite de tests"
+                                            ar="مجموعة الاختبارات"
+                                        />
+                                    }
+                                    value={data.github_test_suite || '—'}
+                                />
+
+                                <MetricCard
+                                    icon={Hash}
+                                    label={
+                                        <TransText
+                                            en="Student branch prefix"
+                                            fr="Préfixe de branche étudiant"
+                                            ar="بادئة فرع الطالب"
+                                        />
+                                    }
+                                    value={data.github_branch_prefix || '—'}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <p className="text-xs font-medium text-beta/60 dark:text-light/60">
+                                    <TransText
+                                        en="Trusted runner repository"
+                                        fr="Dépôt runner approuvé"
+                                        ar="مستودع المشغل الموثوق"
+                                    />
+                                </p>
+
+                                <p className="break-all rounded-lg border border-beta/10 bg-beta/5 px-3 py-2 font-mono text-xs text-beta dark:border-light/10 dark:bg-light/5 dark:text-light">
+                                    {data.github_repo_url || '—'}
+                                </p>
+                            </div>
+                        </div>
+                    </ReviewSection>
+                </>
+            )}
+
+
             <Separator className="bg-beta/8 dark:bg-light/8" />
 
             <ReviewSection
