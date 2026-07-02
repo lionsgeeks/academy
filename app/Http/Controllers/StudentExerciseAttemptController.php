@@ -11,6 +11,7 @@ use App\Services\Exercises\BrowserExerciseCorrectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Jobs\DispatchGithubExerciseAttempt;
 
 class StudentExerciseAttemptController extends Controller
 {
@@ -168,6 +169,11 @@ class StudentExerciseAttemptController extends Controller
 
         if ($visibleExercise->correction_engine === 'browser') {
             $attempt = $browserCorrection->correct($attempt);
+        }
+
+        if ($visibleExercise->correction_engine === 'github_actions') {
+            DispatchGithubExerciseAttempt::dispatch($attempt->id)
+                ->onQueue('github-exercises');
         }
 
         return response()->json([

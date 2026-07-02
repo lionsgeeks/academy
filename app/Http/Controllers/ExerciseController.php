@@ -75,6 +75,12 @@ class ExerciseController extends Controller
                 'url',
             ],
 
+            'github_runner_ref' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
             'github_workflow' => [
                 'nullable',
                 'string',
@@ -212,6 +218,10 @@ class ExerciseController extends Controller
                 ? ($data['github_repo_url'] ?? null)
                 : null,
 
+            'github_runner_ref' => $data['correction_engine'] === 'github_actions'
+                ? ($data['github_runner_ref'] ?? null)
+                : null,
+
             'github_workflow' => $data['correction_engine'] === 'github_actions'
                 ? ($data['github_workflow'] ?? null)
                 : null,
@@ -310,8 +320,13 @@ class ExerciseController extends Controller
         $validator,
         Request $request,
     ): void {
+
+        if ($request->input('status') !== 'published') {
+            return;
+        }
         $requiredFields = [
             'github_repo_url' => 'A GitHub repository URL is required.',
+            'github_runner_ref' => 'A GitHub runner reference is required.',
             'github_workflow' => 'A GitHub workflow is required.',
             'github_test_suite' => 'A GitHub test suite is required.',
             'github_branch_prefix' => 'A GitHub branch prefix is required.',

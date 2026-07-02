@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'github' => [
+        'token' => env('GITHUB_ACTIONS_TOKEN'),
+        'api_url' => env('GITHUB_API_URL', 'https://api.github.com'),
+    ],
+
 ];

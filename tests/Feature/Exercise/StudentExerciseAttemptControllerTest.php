@@ -10,6 +10,8 @@ use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use App\Jobs\DispatchGithubExerciseAttempt;
+use Illuminate\Support\Facades\Queue;
 
 uses(RefreshDatabase::class);
 
@@ -258,6 +260,8 @@ it('rejects browser source data that is missing required code', function () {
 });
 
 it('creates a queued GitHub repository attempt for a visible GitHub exercise', function () {
+    Queue::fake();
+
     $student = createStudentAttemptUser();
     $topic = createStudentAttemptTopic();
 
@@ -304,7 +308,18 @@ it('creates a queued GitHub repository attempt for a visible GitHub exercise', f
         'branch' => 'student-1-laravel-posts-crud',
         'commit_sha' => 'abc123',
     ]);
+
+    $attempt = ExerciseAttempt::query()->firstOrFail();
+
+    Queue::assertPushedOn(
+        'github-exercises',
+        DispatchGithubExerciseAttempt::class,
+        function (DispatchGithubExerciseAttempt $job) use ($attempt): bool {
+            return $job->attemptId === $attempt->id;
+        },
+    );
 });
+
 
 it('creates sequential attempt numbers for the same student exercise', function () {
     $student = createStudentAttemptUser();

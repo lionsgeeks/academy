@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'repository_url',
     'branch',
     'commit_sha',
+    'github_dispatch_token',
+    'github_dispatched_at',
     'score',
     'passed',
     'feedback',
@@ -46,6 +48,7 @@ class ExerciseAttempt extends Model
             'submitted_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'github_dispatched_at' => 'datetime',
         ];
     }
 }
