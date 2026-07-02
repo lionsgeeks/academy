@@ -2,6 +2,7 @@ import { BookOpen, Clock, Eye, Layers3, MoreHorizontal } from 'lucide-react';
 import { TransText } from '@/components/TransText';
 import { Button } from '@/components/ui/button';
 import BannerVisual from './BannerVisual';
+import { Link } from '@inertiajs/react';
 
 export default function CourseCard({
     course,
@@ -18,7 +19,10 @@ export default function CourseCard({
         >
             <div className="absolute inset-y-0 left-0 w-1 bg-alpha opacity-80" />
             <div className="grid sm:grid-cols-[1fr_34%]">
-                <div className="relative flex min-h-44 flex-col justify-between gap-5 overflow-hidden p-4 pl-6">
+                <Link
+                    href={"courses/" + course.id}
+                    className="relative flex min-h-44 flex-col justify-between gap-5 overflow-hidden p-4 pl-6"
+                >
                     <div className="absolute inset-0 bg-[linear-gradient(115deg,var(--color-muted)_0%,transparent_42%)] opacity-35" />
                     <div className="relative">
                         <div className="mb-3 flex items-center gap-2">
@@ -86,7 +90,7 @@ export default function CourseCard({
                             }
                         />
                     </div>
-                </div>
+                </Link>
 
                 <div className="relative border-l border-border/70 bg-muted/20 p-2">
                     <BannerVisual

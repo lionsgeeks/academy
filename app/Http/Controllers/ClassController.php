@@ -125,7 +125,9 @@ class ClassController extends Controller
         if ($students) {
             foreach ($students as $key => $student) {
                 $data["students"][$key]["name"] = $student->name;
-                $data["students"][$key]["avatar"] = $student->avatar;
+                $data["students"][$key]["avatar"] = $student->avatar ?
+                    env("CENTRAL_HOST_URL") . "/storage/img/profile/" . $student->avatar :
+                    null;
                 $data["students"][$key]["email"] = $student->email;
                 $data["students"][$key]["gh_url"] = $this->getGithub($student);
                 $data["students"][$key]["wakaKey"] = $this->getWakatimeKey($student);

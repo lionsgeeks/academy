@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('promotion_students', function (Blueprint $table) {
             $table->id();
             $table->foreignId('promotion_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
             $table->string('status')->default('active')->index();
             $table->timestamp('joined_at')->useCurrent();
             $table->timestamp('left_at')->nullable();

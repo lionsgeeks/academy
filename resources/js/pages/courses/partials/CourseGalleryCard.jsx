@@ -1,4 +1,5 @@
 import { BookOpen, Clock, Layers3 } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import { TransText } from '@/components/TransText';
 import BannerVisual from './BannerVisual';
 import { CountBadge, CourseQuickActions } from './CourseCard';
@@ -26,7 +27,10 @@ export default function CourseGalleryCard({
                     onOpenMenu={onOpenMenuFromButton}
                 />
             </div>
-            <div className="flex min-h-40 flex-col justify-between gap-4 p-4">
+            <Link
+                href={"courses/" + course.id}
+                className="flex min-h-40 flex-col justify-between gap-4 p-4"
+            >
                 <div>
                     <div className="mb-3 flex items-center gap-2">
                         <span className="flex size-8 items-center justify-center rounded-md border border-alpha/30 bg-alpha/10 text-xs font-bold text-alpha">
@@ -88,7 +92,7 @@ export default function CourseGalleryCard({
                         }
                     />
                 </div>
-            </div>
+            </Link>
         </article>
     );
 }

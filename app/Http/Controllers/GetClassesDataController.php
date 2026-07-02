@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User_role;
 use App\Models\User;
 use App\Models\UserClass;
+use App\Services\GetAvatarsService;
 use App\Services\GetSocialsService;
 use App\Services\GetWakaTimeKeys;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class GetClassesDataController extends Controller
     public function __construct(
         private GetSocialsService $getSocialsService,
         private GetWakaTimeKeys $get_waka_time_keys,
+        private GetAvatarsService $get_avatars_service,
     ) {}
 
     private function assignRoles(array $roles, ?User $user)
@@ -132,6 +134,7 @@ class GetClassesDataController extends Controller
                             ]
                         );
                     }
+                    // $this->get_avatars_service->get($coach["avatar"]);
                     $this->assignRoles($coach["roles"], $user);
                     $this->assignClass($formation, $user, true);
                 }
@@ -165,6 +168,7 @@ class GetClassesDataController extends Controller
                             ]
                         );
                     }
+                    // $this->get_avatars_service->get($student["avatar"]);
                     $this->assignRoles($student["roles"], $user);
                     $this->assignClass($formation, $user);
                 }

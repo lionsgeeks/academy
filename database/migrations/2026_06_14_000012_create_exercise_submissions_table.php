@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('exercise_submissions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('exercise_id')->constrained()->cascadeOnDelete();
             $table->longText('code_text')->nullable();
             $table->string('submission_url')->nullable();

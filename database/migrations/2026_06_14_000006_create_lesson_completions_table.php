@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('lesson_completions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('lesson_id')->constrained()->cascadeOnDelete();
             $table->timestamp('completed_at')->useCurrent();
             $table->timestamps();

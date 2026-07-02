@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserClass;
 use App\Models\User_role;
+use App\Services\GetAvatarsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,9 @@ use function Illuminate\Log\log;
 
 class AuthController extends Controller
 {
-
+    public function __construct(private GetAvatarsService $getAvatars)
+    {
+    }
     public function login()
     {
         if (Auth::check()) {
@@ -113,6 +116,7 @@ class AuthController extends Controller
         }
 
         $this->assignRoles($token["roles"], $user);
+        // $this->getAvatars->get($token["avatar"]);
 
         Auth::login($user);
         return redirect()->intended("dashboard");
