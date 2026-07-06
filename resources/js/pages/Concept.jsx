@@ -5,7 +5,11 @@ import CourseStructureSidebar from './Concepts/partials/CourseStructureSidebar';
 import TopicWorkspace from './Concepts/partials/TopicWorkspace';
 
 export default function Concept() {
-    const { concept: serverConcept, topics: serverTopics = [] } = usePage().props;
+    const {
+        concept: serverConcept,
+        topics: serverTopics = [],
+        publishableClasses = [],
+    } = usePage().props;
 
     const concept = serverConcept || {
         id: null,
@@ -22,10 +26,11 @@ export default function Concept() {
             videoUrl: topic.lessons?.[0]?.content_url || '',
             videoFile: null,
             resources: [],
+            exercises: topic.exercises ?? [],
             difficulty: 'easy',
             status: 'draft',
             hasQuiz: false,
-            hasExercise: false,
+            hasExercise: (topic.exercises?.length ?? 0) > 0,
         }))
     );
 
@@ -82,6 +87,7 @@ export default function Concept() {
 
                 <TopicWorkspace
                     topic={activeTopic}
+                    publishableClasses={publishableClasses}
                     onUpdateTopic={(updates) => {
                         if (!activeTopic) return;
                         updateTopic(activeTopic.id, updates);

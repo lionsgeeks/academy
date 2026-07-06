@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Concept;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Services\Exercises\ExerciseClassEligibilityService;
 
 class ConceptBuilderController extends Controller
 {
@@ -35,13 +36,43 @@ class ConceptBuilderController extends Controller
         return redirect()->route('concept.edit', $concept);
     }
 
-    public function edit(Concept $concept)
-    {
-        $concept->load('topics.lessons');
+    public function edit(
+        Request $request,
+        Concept $concept,
+        ExerciseClassEligibilityService $classEligibility,
+    ) {
+        $concept->load([
+            'topics.lessons',
+            'topics.exercises' => fn($query) => $query
+                ->select([
+                    'id',
+                    'topic_id',
+                    'title',
+                    'difficulty',
+                    'xp_reward',
+                    'correction_engine',
+                    'exercise_type',
+                    'status',
+                    'order_index',
+                ])
+                ->orderBy('order_index'),
+        ]);
+
+        $publishableClasses = $classEligibility
+            ->currentClassesFor($request->user())
+            ->map(fn($classItem) => [
+                'id' => $classItem->id,
+                'name' => $classItem->name,
+                'promo' => $classItem->promo,
+                'type' => $classItem->type,
+                'class' => $classItem->class,
+            ])
+            ->values();
 
         return Inertia::render('Concept', [
             'concept' => $concept,
             'topics' => $concept->topics,
+            'publishableClasses' => $publishableClasses,
         ]);
     }
 }
