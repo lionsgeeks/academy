@@ -27,7 +27,7 @@ class CourseConceptRoadmapController extends Controller
             'concepts' => fn ($query) => $query->orderBy('order_index'),
         ]);
 
-        return Inertia::render('concepts-roadmap/[id]', [
+        return Inertia::render('courses/[id]', [
             'course' => $course,
         ]);
     }

@@ -364,3 +364,18 @@
     height: 2px;
     background: var(--color-dark);
 }
+.dark .recharts-polar-grid-concentric-polygon {
+    fill: transparent !important;
+    stroke: #867f7f !important;
+}
+
+.dark .recharts-polar-grid-angle line {
+    stroke: #867f7f !important;
+}
+.dark .recharts-polar-angle-axis text {
+    fill: #FFFFFF !important;
+}
+
+.dark .recharts-polar-angle-axis tspan {
+    fill: #FFFFFF !important;
+}

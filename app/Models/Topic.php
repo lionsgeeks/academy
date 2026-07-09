@@ -29,4 +29,9 @@ class Topic extends Model
     {
         return $this->hasMany(Exercise::class);
     }
+
+    public function resources(): HasMany
+    {
+        return $this->hasMany(TopicResource::class)->orderBy('order_index');
+    }
 }

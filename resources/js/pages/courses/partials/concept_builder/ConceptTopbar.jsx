@@ -2,7 +2,7 @@ import { Eye, Save, HelpCircle, Award } from 'lucide-react';
 import Quizes from '@/components/quizes';
 import Exercises from '@/components/exercices';
 
-export default function ConceptTopbar({ concept }) {
+export default function ConceptTopbar({ concept, onSave }) {
     return (
         <header className="h-16 bg-card border-b border-border px-6 flex items-center justify-between shrink-0">
             <div>
@@ -23,7 +23,11 @@ export default function ConceptTopbar({ concept }) {
 
                 
 
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-alpha text-xs font-semibold">
+                <button
+                    type="button"
+                    onClick={onSave}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-alpha text-xs font-semibold"
+                >
                     <Save className="w-4 h-4" />
                     Save
                 </button>

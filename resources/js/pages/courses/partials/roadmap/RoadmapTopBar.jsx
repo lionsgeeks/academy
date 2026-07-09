@@ -32,11 +32,12 @@ export default function RoadmapTopBar({ course, conceptCount, onAdd }) {
                     >
                         <ArrowLeft className="size-4" />
                     </Button>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl" aria-hidden="true">
+                            {course?.emoji || '📚'}
+                        </span>
                         <h1 className="text-lg font-semibold text-foreground">
-                            {course?.title 
-                            ? course.title.charAt(0).toUpperCase() + course.title.slice(1)
-                            : ''}
+                            {course?.title}
                         </h1>
                     </div>
                 </div>

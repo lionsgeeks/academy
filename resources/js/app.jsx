@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { AppContextProvider } from '@/context/AppContext';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -14,8 +15,6 @@ createInertiaApp({
       case name.startsWith('welcome'):
         return null;
       case name.startsWith('courses/'):
-        return null;
-      case name.startsWith('concepts-roadmap/'):
         return null;
       case name.startsWith('classes/'):
         return null;
@@ -28,10 +27,16 @@ createInertiaApp({
   strictMode: true,
   withApp(app) {
     return (
+      <AppContextProvider>
       <TooltipProvider delayDuration={0}>
         {app}
         <Toaster />
-      </TooltipProvider>);
+      </TooltipProvider>
+      </AppContextProvider>
+      
+      )
+      
+      ;
 
   },
   progress: {

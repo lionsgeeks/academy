@@ -29,7 +29,7 @@ export default function TopicSettingsTab({ topic, onUpdateTopic }) {
                     type="text"
                     value={topic?.title || ''}
                     onChange={(e) => onUpdateTopic({ title: e.target.value })}
-                    placeholder="e.g. While Loop"
+                    placeholder="Enter lesson title..."
                     className={inputClass}
                 />
             </div>

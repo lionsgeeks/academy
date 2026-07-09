@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 /*
  * Ambient overlay — rendered as `absolute inset-0` inside the scrollable canvas
- * section of index.jsx. Because the parent is `position: relative` and has
+ * section of courses/[id].jsx. Because the parent is `position: relative` and has
  * overflow-y-auto, this element is always sized to the visible viewport, not the
  * full scroll height. This is intentional: glow and vignette persist at the
  * viewport level regardless of how far the user has scrolled.

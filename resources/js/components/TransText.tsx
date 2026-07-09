@@ -1,4 +1,4 @@
-import { useAppContext } from '../context/appContext';
+import { useAppContext } from '../context/AppContext';
 import React from 'react';
 
 interface TextProps {

@@ -6,8 +6,8 @@ import ConceptPath from './ConceptPath';
 import EmptyConcepts from './EmptyConcepts';
 
 /*
- * No RoadmapBackground here — it now lives in the parent scrollable section
- * (index.jsx) so it fills the full viewport width, not just the 560px canvas.
+ * No RoadmapBackground here — it lives in the parent scrollable section
+ * (courses/[id].jsx) so it fills the full viewport width, not just the 560px canvas.
  * The canvas itself is transparent: nodes float on the workspace background.
  */
 export default function ConceptsRoadmap({
@@ -30,7 +30,6 @@ export default function ConceptsRoadmap({
          * No card styling (no bg-card, no border, no rounded, no shadow) — those
          * would reintroduce the "panel inside the workspace" feeling.
          * overflow-hidden is kept to clip SVG paths and node overflow correctly.
-         * py-8 gives vertical breathing room between the toolbar and the first node.
          */
         <motion.div
             className="relative mx-auto overflow-hidden"
