@@ -28,7 +28,7 @@ export default function CourseGalleryCard({
                 />
             </div>
             <Link
-                href={"courses/" + course.id}
+                href={`/courses/${course.id}`}
                 className="flex min-h-40 flex-col justify-between gap-4 p-4"
             >
                 <div>

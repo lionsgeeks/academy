@@ -12,22 +12,44 @@ export const TYPE_MAX = 30;
 
 export const CANVAS_WIDTH = 560;
 export const NODE_RADIUS = 33;
-export const VERTICAL_STEP = 200;
-export const TOP_PADDING = 110;
-export const BOTTOM_PADDING = 300;
-export const CURVE_AMPLITUDE = 114;
-export const CURVE_FREQUENCY = Math.PI * 0.65;
+export const VERTICAL_STEP = 175;
+export const TOP_PADDING = 130;
+export const BOTTOM_PADDING = 220;
+export const MIN_CANVAS_WIDTH = 360;
 
-export function getNodePosition(index) {
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function getLaneCount(canvasWidth) {
+    if (canvasWidth >= 1180) return 4;
+    if (canvasWidth >= 760) return 3;
+    return 2;
+}
+
+export function getNodePosition(index, canvasWidth = CANVAS_WIDTH) {
+    const width = Math.max(canvasWidth, MIN_CANVAS_WIDTH);
+    const lanes = getLaneCount(width);
+    const edgePadding = clamp(width * 0.16, 120, 260);
+    const row = Math.floor(index / lanes);
+    const column = index % lanes;
+    const laneIndex = row % 2 === 0 ? column : lanes - 1 - column;
+    const usableWidth = width - edgePadding * 2;
+    const laneGap = lanes > 1 ? usableWidth / (lanes - 1) : 0;
+    const verticalWave = [0, 46, 12, 54];
+
     return {
-        x: CANVAS_WIDTH / 2 + CURVE_AMPLITUDE * Math.sin(index * CURVE_FREQUENCY),
-        y: TOP_PADDING + index * VERTICAL_STEP,
+        x: edgePadding + laneIndex * laneGap,
+        y: TOP_PADDING + row * VERTICAL_STEP + verticalWave[column % verticalWave.length],
     };
 }
 
-export function getCanvasHeight(count) {
+export function getCanvasHeight(count, canvasWidth = CANVAS_WIDTH) {
     const nodes = count + 1;
-    return TOP_PADDING + nodes * VERTICAL_STEP + BOTTOM_PADDING;
+    const lanes = getLaneCount(Math.max(canvasWidth, MIN_CANVAS_WIDTH));
+    const rows = Math.max(1, Math.ceil(nodes / lanes));
+
+    return TOP_PADDING + rows * VERTICAL_STEP + BOTTOM_PADDING;
 }
 
 export function isNearLimit(current, max) {

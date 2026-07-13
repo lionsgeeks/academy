@@ -31,11 +31,6 @@ export const AppContextProvider = ({ children }) => {
         localStorage.setItem('darkMode', String(darkMode));
     }, [selectedLanguage, darkMode]);
 
-    // Tailwind dark: variant uses @custom-variant dark (&:is(.dark *)) — sync context with <html>
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', darkMode);
-    }, [darkMode]);
-
     return <AppContext.Provider value={{ selectedLanguage, setSelectedLanguage, darkMode, setDarkMode }}>{children}</AppContext.Provider>;
 };
 

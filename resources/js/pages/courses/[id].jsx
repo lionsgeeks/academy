@@ -6,7 +6,7 @@ import {
     update as updateConceptRoute,
     destroy as destroyConceptRoute,
 } from '@/routes/courses/concepts-roadmap/concepts';
-import ConceptDetailsCard from './partials/roadmap/ConceptDetailsCard';
+import { edit as editConceptRoute } from '@/routes/concept';
 import ConceptModal from './partials/roadmap/ConceptModal';
 import ConceptsRoadmap from './partials/roadmap/ConceptsRoadmap';
 import RoadmapBackground from './partials/roadmap/RoadmapBackground';
@@ -45,7 +45,7 @@ export default function CourseDetails({ course }) {
     };
 
     const openConceptBuilder = (concept) => {
-        router.visit(`/concept/${concept.id}/edit`);
+        router.visit(editConceptRoute(concept).url);
     };
 
     const handleSubmitConcept = (event) => {
@@ -106,7 +106,7 @@ export default function CourseDetails({ course }) {
                         course={course}
                         concepts={concepts}
                         selectedConcept={selectedConcept}
-                        onSelectConcept={setSelectedConcept}
+                        onSelectConcept={openConceptBuilder}
                         onAddConcept={handleAddConcept}
                         onEditConcept={handleEditConcept}
                         onDeleteConcept={handleDeleteConcept}
@@ -122,16 +122,7 @@ export default function CourseDetails({ course }) {
                     onSubmit={handleSubmitConcept}
                     isEditing={Boolean(selectedConcept)}
                 />
-
-                <ConceptDetailsCard
-                    concept={selectedConcept}
-                    conceptIndex={concepts.findIndex((c) => c.id === selectedConcept?.id)}
-                    onClose={() => setSelectedConcept(null)}
-                    onEdit={() => selectedConcept && openConceptBuilder(selectedConcept)}
-                    onDelete={() => selectedConcept && handleDeleteConcept(selectedConcept)}
-                />
             </div>
         </AppSidebarLayout>
     );
 }
-

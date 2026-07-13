@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 
-import ConceptTopbar from '../courses/partials/concept_builder/ConceptTopbar';
-import CourseStructureSidebar from '../courses/partials/concept_builder/CourseStructureSidebar';
-import TopicWorkspace from '../courses/partials/concept_builder/TopicWorkspace';
+import AppLayout from '@/layouts/app-layout';
+import { index as coursesIndex } from '@/routes/courses';
+import ConceptTopbar from './partials/ConceptTopbar';
+import CourseStructureSidebar from './partials/CourseStructureSidebar';
+import TopicWorkspace from './partials/TopicWorkspace';
 
 function hasResourceFile(resource) {
     return resource.file && typeof resource.file === 'object';
@@ -222,48 +224,69 @@ export default function Concept() {
         console.warn('Concept Builder opened without an existing concept.');
 
         return (
-            <div className="flex h-screen items-center justify-center bg-background text-foreground">
-                <p className="text-sm font-medium text-muted-foreground">
-                    No concept selected.
-                </p>
-            </div>
+            <ConceptBuilderLayout title="Concept builder">
+                <div className="flex min-h-[520px] items-center justify-center text-foreground">
+                    <p className="text-sm font-medium text-muted-foreground">
+                        No concept selected.
+                    </p>
+                </div>
+            </ConceptBuilderLayout>
         );
     }
 
     return (
-        <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-            <ConceptTopbar concept={concept} onSave={handleSave} />
+        <ConceptBuilderLayout title={`${concept.title || 'Concept'} builder`}>
+            <div className="flex flex-col h-full min-h-0 overflow-hidden border rounded-lg border-border bg-background text-foreground">
+                <ConceptTopbar concept={concept} onSave={handleSave} />
 
-            {Object.keys(saveErrors).length > 0 && (
-                <div className="border-b border-error/30 bg-error/10 px-6 py-2 text-xs text-error">
-                    <p className="font-semibold">Save failed. Check these fields:</p>
-                    <ul className="mt-1 list-disc pl-4">
-                        {Object.entries(saveErrors).map(([field, message]) => (
-                            <li key={field}>{field}: {message}</li>
-                        ))}
-                    </ul>
+                {Object.keys(saveErrors).length > 0 && (
+                    <div className="px-6 py-2 text-xs border-b border-error/30 bg-error/10 text-error">
+                        <p className="font-semibold">Save failed. Check these fields:</p>
+                        <ul className="pl-4 mt-1 list-disc">
+                            {Object.entries(saveErrors).map(([field, message]) => (
+                                <li key={field}>{field}: {message}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                <div className="flex flex-1 overflow-hidden">
+                    <CourseStructureSidebar
+                        concept={concept}
+                        topics={topics}
+                        activeTopicId={activeTopicId}
+                        onSelectTopic={setActiveTopicId}
+                        onAddTopic={addTopic}
+                        onDeleteTopic={deleteTopic}
+                    />
+
+                    <TopicWorkspace
+                        topic={activeTopic}
+                        publishableClasses={publishableClasses}
+                        onUpdateTopic={(updates) => {
+                            if (!activeTopic) return;
+                            updateTopic(activeTopic.id, updates);
+                        }}
+                    />
                 </div>
-            )}
-
-            <div className="flex flex-1 overflow-hidden">
-                <CourseStructureSidebar
-                    concept={concept}
-                    topics={topics}
-                    activeTopicId={activeTopicId}
-                    onSelectTopic={setActiveTopicId}
-                    onAddTopic={addTopic}
-                    onDeleteTopic={deleteTopic}
-                />
-
-                <TopicWorkspace
-                    topic={activeTopic}
-                    publishableClasses={publishableClasses}
-                    onUpdateTopic={(updates) => {
-                        if (!activeTopic) return;
-                        updateTopic(activeTopic.id, updates);
-                    }}
-                />
             </div>
-        </div>
+        </ConceptBuilderLayout>
+    );
+}
+
+function ConceptBuilderLayout({ title, children }) {
+    return (
+        <AppLayout
+            contentClassName="my-0 w-full rounded-none shadow-none"
+            breadcrumbs={[
+                { title: 'Courses', href: coursesIndex() },
+                { title: 'Concept builder', href: '#' },
+            ]}
+        >
+            <Head title={title} />
+            <div className="h-[calc(100vh-4rem)] min-h-[560px] bg-light p-0 dark:bg-dark">
+                {children}
+            </div>
+        </AppLayout>
     );
 }

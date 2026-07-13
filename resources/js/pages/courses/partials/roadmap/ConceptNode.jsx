@@ -78,7 +78,7 @@ export default function ConceptNode({
                     type="button"
                     data-concept-node="true"
                     onClick={onSelect}
-                    className={`relative flex size-[66px] cursor-pointer items-center justify-center rounded-full border-2 bg-card text-2xl shadow-md transition-colors duration-200 hover:border-alpha/60 ${
+                    className={`relative flex size-[66px] cursor-pointer items-center justify-center rounded-full border-2 bg-card/95 text-2xl shadow-[0_10px_28px_rgba(0,0,0,0.28),0_0_0_6px_rgba(255,204,0,0.035)] backdrop-blur transition-colors duration-200 hover:border-alpha/70 ${
                         selected
                             ? 'border-alpha ring-4 ring-alpha/20'
                             : 'border-border'
@@ -95,7 +95,7 @@ export default function ConceptNode({
                 </motion.button>
 
                 {/* Title */}
-                <p className="mt-2 max-w-[100px] text-center text-xs font-medium leading-tight text-foreground">
+                <p className="mt-2 max-w-[110px] rounded-full bg-background/60 px-2 py-0.5 text-center text-xs font-medium leading-tight text-foreground shadow-sm backdrop-blur">
                     {concept.title}
                 </p>
             </motion.div>

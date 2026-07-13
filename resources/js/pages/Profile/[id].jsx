@@ -4,7 +4,7 @@ import { ChevronLeft, } from "lucide-react";
 import LearningJourney from "./partials/student-profile/LearningJourney";
 import Activitywakatime from "./partials/student-profile/Activitywakatime";
 import { Link } from "@inertiajs/react";
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "@/context/appContext";
 import StudentHeader from "./partials/student-profile/StudentHeader";
 import LearningHealth from "./partials/student-profile/LearningHealth";
 import VelocityLearning from "./partials/student-profile/VelocityLearning";
@@ -138,7 +138,7 @@ export default function StudentProfile({ student, onBack }) {
     return (
 
         <div className="flex flex-col gap-8 pb-16 mt-8 px-2 md:px-4 lg:px-8 ">
-        
+
             <StudentHeader student={student} s={s} skillData={skillData} onBack={onBack} />
 
 

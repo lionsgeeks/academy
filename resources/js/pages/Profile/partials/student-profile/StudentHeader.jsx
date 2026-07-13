@@ -1,34 +1,127 @@
-import { useState } from "react";
-import { Clock } from "lucide-react";
-import {
-    ResponsiveContainer,
-    RadarChart,
-    PolarGrid,
-    PolarAngleAxis,
-    PolarRadiusAxis,
-    Radar,
-    Tooltip,
-} from "recharts";
-import { useAppContext } from "@/context/AppContext";
-import { ChevronLeft, } from "lucide-react";
+import { Clock, ChevronLeft } from "lucide-react";
+import { useAppContext } from "@/context/appContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useInitials } from "@/hooks/use-initials";
 import Card from "../../components/Card";
 import Section from "../../components/Section";
 
-
-
-
 const A = "#F4B400";
 
+function polarPoint(cx, cy, radius, angle) {
+    const rad = (Math.PI / 180) * angle;
+    return {
+        x: cx + radius * Math.sin(rad),
+        y: cy - radius * Math.cos(rad),
+    };
+}
 
+function SkillRadar({ data, darkMode }) {
+    const size = 360;
+    const cx = size / 2;
+    const cy = size / 2;
+    const maxR = size * 0.34;
+    const levels = [0.25, 0.5, 0.75, 1];
+    const count = data?.length || 0;
 
+    if (!count) return null;
+
+    const angleStep = 360 / count;
+
+    const gridStroke = darkMode ? "#000000" : "#E5E7EB";
+    const labelFill = darkMode ? "#FFFFFF" : "#111827";
+    const radarStroke = darkMode ? "#FFD54A" : "#8B6B00";
+
+    const levelPolygons = levels.map((level) => {
+        const points = data
+            .map((_, i) => {
+                const p = polarPoint(cx, cy, maxR * level, i * angleStep);
+                return `${p.x},${p.y}`;
+            })
+            .join(" ");
+        return points;
+    });
+
+    const valuePoints = data
+        .map((item, i) => {
+            const p = polarPoint(cx, cy, maxR * (Math.min(item.value, 100) / 100), i * angleStep);
+            return `${p.x},${p.y}`;
+        })
+        .join(" ");
+
+    const axes = data.map((_, i) => {
+        const p = polarPoint(cx, cy, maxR, i * angleStep);
+        return { x2: p.x, y2: p.y };
+    });
+
+    const labels = data.map((item, i) => {
+        const p = polarPoint(cx, cy, maxR + 28, i * angleStep);
+        return { ...p, text: item.subject };
+    });
+
+    return (
+        <svg viewBox={`0 0 ${size} ${size}`} width="100%" height="100%" role="img" aria-label="Skill mastery radar">
+            {!darkMode &&
+                levelPolygons.map((points, i) => (
+                    <polygon
+                        key={`fill-${i}`}
+                        points={points}
+                        fill="#FFFFFF"
+                        fillOpacity={i === levels.length - 1 ? 1 : 0}
+                        stroke="none"
+                    />
+                ))}
+
+            {levelPolygons.map((points, i) => (
+                <polygon
+                    key={`grid-${i}`}
+                    points={points}
+                    fill="none"
+                    stroke={gridStroke}
+                    strokeWidth={1}
+                />
+            ))}
+
+            {axes.map((axis, i) => (
+                <line
+                    key={`axis-${i}`}
+                    x1={cx}
+                    y1={cy}
+                    x2={axis.x2}
+                    y2={axis.y2}
+                    stroke={gridStroke}
+                    strokeWidth={1}
+                />
+            ))}
+
+            <polygon
+                points={valuePoints}
+                fill="#F4B400"
+                fillOpacity={0.35}
+                stroke={radarStroke}
+                strokeWidth={4}
+            />
+
+            {labels.map((label, i) => (
+                <text
+                    key={`label-${i}`}
+                    x={label.x}
+                    y={label.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill={labelFill}
+                    fontSize={13}
+                    fontWeight={600}
+                >
+                    {label.text}
+                </text>
+            ))}
+        </svg>
+    );
+}
 
 export default function StudentHeader({ student, s, skillData, onBack }) {
-
     const { darkMode } = useAppContext();
     const getInitials = useInitials();
-
 
     return (
         <div className="rounded-3xl overflow-hidden border bg-gradient-to-b from-[#FFF7DD] via-[#FAF8F3] to-[#F2F2F2] dark:from-[#362e19]
@@ -132,72 +225,7 @@ export default function StudentHeader({ student, s, skillData, onBack }) {
 
                         >
                             <div className="w-[360px] h-[360px]">
-
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RadarChart
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius="68%"
-                                        data={skillData}
-
-                                    >
-                                        <PolarGrid
-                                            gridType="polygon"
-                                            fill={darkMode ? "transparent" : "#FFFFFF"}
-                                            fillOpacity={darkMode ? 0 : 1}
-                                            stroke={darkMode ? "#000000" : "#E5E7EB"}
-                                            radialLines={true}
-                                        />
-
-                                        <PolarAngleAxis
-                                            dataKey="subject"
-                                            tick={(props) => {
-                                                const { payload, x, y, textAnchor } = props;
-
-                                                return (
-                                                    <text
-                                                        x={x}
-                                                        y={y}
-                                                        textAnchor={textAnchor}
-                                                        fill={darkMode ? "#FFFFFF" : "#111827"}
-                                                        fontSize={13}
-                                                        fontWeight={600}
-                                                        dominantBaseline="middle"
-                                                    >
-                                                        {payload.value}
-                                                    </text>
-                                                );
-                                            }}
-                                        />
-
-                                        <PolarRadiusAxis
-                                            domain={[0, 100]}
-                                            tick={false}
-                                            axisLine={false}
-                                            stroke={darkMode ? "#000000" : "#E5E7EB"}
-                                        />
-
-                                        <Tooltip
-                                            cursor={{ fill: "rgba(244,180,0,.06)" }}
-                                            contentStyle={{
-                                                background: darkMode ? "#1F1F1F" : "#FFFFFF",
-                                                border: `1px solid ${darkMode ? "#3A3A3A" : "#F3F4F6"}`,
-                                                color: darkMode ? "#FFFFFF" : "#111827",
-                                                borderRadius: "10px",
-                                            }}
-                                            formatter={(value) => [`${value}%`, "Mastery"]}
-                                        />
-
-                                        <Radar
-                                            dataKey="value"
-                                            stroke={darkMode ? "#FFD54A" : "#8B6B00"}
-                                            fill="#F4B400"
-                                            fillOpacity={0.35}
-                                            strokeWidth={4}
-                                        />
-                                    </RadarChart>
-                                </ResponsiveContainer>
-
+                                <SkillRadar data={skillData} darkMode={darkMode} />
                             </div>
 
                         </Card>
@@ -211,10 +239,3 @@ export default function StudentHeader({ student, s, skillData, onBack }) {
 
     );
 }
-
-
-
-
-
-
-
