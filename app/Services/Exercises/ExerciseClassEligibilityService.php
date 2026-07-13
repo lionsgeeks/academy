@@ -9,6 +9,8 @@ use Illuminate\Support\Collection;
 
 class ExerciseClassEligibilityService
 {
+    private const TEMPORARY_PROMO_EXCEPTIONS = [5];
+
     public function currentClassesFor(User $user): Collection
     {
         $runningClasses = Classes::query()
@@ -24,8 +26,26 @@ class ExerciseClassEligibilityService
             return collect();
         }
 
-        $eligibleClasses = (clone $runningClasses)
-            ->where('promo', $currentPromo);
+        $eligiblePromos = collect([$currentPromo])
+            ->merge(self::TEMPORARY_PROMO_EXCEPTIONS)
+            ->unique()
+            ->values()
+            ->all();
+
+        $eligibleClasses = Classes::query()
+            ->whereNotNull('promo')
+            ->whereIn('promo', $eligiblePromos)
+            ->where(function ($query) use ($currentPromo): void {
+                $query
+                    ->where('promo', '!=', $currentPromo)
+                    ->orWhere(function ($currentPromoQuery): void {
+                        $currentPromoQuery
+                            ->whereNotNull('start_time')
+                            ->whereDate('start_time', '<=', today())
+                            ->whereNotNull('end_time')
+                            ->whereDate('end_time', '>=', today());
+                    });
+            });
 
         if (! $this->canTargetAnyCurrentClass($user)) {
             $coachRoleId = Role::query()

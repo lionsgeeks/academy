@@ -5,7 +5,9 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\StudentExerciseAttemptController;
 use App\Http\Controllers\StudentExerciseController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('courses', [CourseController::class, 'index'])
@@ -53,6 +55,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'student/exercises',
         [StudentExerciseController::class, 'index'],
     )->name('student.exercises.index');
+
+    Route::get('student/exercise-lab', function (Request $request) {
+        abort_unless(
+            $request->user()
+                && $request->user()
+                    ->Roles()
+                    ->where('role', 'student')
+                    ->exists(),
+            403,
+        );
+
+        return Inertia::render('student/exercise-lab/index', [
+            'csrfToken' => csrf_token(),
+        ]);
+    })->name('student.exercise-lab.index');
 
     Route::get(
         'student/exercises/{exercise}',

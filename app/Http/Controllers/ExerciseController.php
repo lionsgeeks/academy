@@ -198,7 +198,7 @@ class ExerciseController extends Controller
             if ($eligibleClassIds->count() !== $classIds->count()) {
                 $validator->errors()->add(
                     'class_ids',
-                    'Every selected class must be running, from the current promo, and assigned to you.',
+                    'Every selected class must be eligible for exercise publishing and assigned to you.',
                 );
             }
         });
