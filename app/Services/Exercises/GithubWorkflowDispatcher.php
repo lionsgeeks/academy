@@ -4,6 +4,7 @@ namespace App\Services\Exercises;
 
 use App\Models\ExerciseAttempt;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class GithubWorkflowDispatcher
@@ -37,17 +38,10 @@ class GithubWorkflowDispatcher
             );
         }
 
-        if (
-            ! is_string($attempt->github_dispatch_token)
-            || $attempt->github_dispatch_token === ''
-        ) {
-            throw new RuntimeException(
-                'The GitHub attempt dispatch token is missing.',
-            );
-        }
+        $runnerRepositoryUrl = $exercise->github_repo_url;
 
         [$owner, $repository] = $this->repositoryCoordinates(
-            $exercise->github_repo_url,
+            $runnerRepositoryUrl,
         );
 
         $apiUrl = rtrim(
@@ -74,16 +68,28 @@ class GithubWorkflowDispatcher
                 [
                     'ref' => $exercise->github_runner_ref,
                     'inputs' => [
-                        'attempt_token' => $attempt->github_dispatch_token,
-                        'student_repository_url' => $attempt->repository_url,
-                        'student_branch' => $attempt->branch,
-                        'student_commit_sha' => $attempt->commit_sha ?? '',
+                        'attempt_token' => (string) $attempt->github_dispatch_token,
+                        'submission_id' => (string) $attempt->id,
+                        'exercise_slug' => $this->exerciseSlug($exercise),
                         'test_suite' => $exercise->github_test_suite,
+                        'student_branch' => $attempt->branch,
+                        'student_repository' => $attempt->repository_url,
                     ],
                 ],
             );
 
         $response->throw();
+    }
+
+    private function exerciseSlug(object $exercise): string
+    {
+        $title = $exercise->title ?? '';
+
+        $slug = Str::slug((string) $title);
+
+        return $slug !== ''
+            ? $slug
+            : 'exercise-' . ($exercise->id ?? 'unknown');
     }
 
     /**

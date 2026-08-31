@@ -5,6 +5,7 @@ use App\Models\ExerciseAttempt;
 use App\Services\Exercises\GithubWorkflowDispatcher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 
 beforeEach(function () {
@@ -17,6 +18,7 @@ function githubDispatcherAttempt(
     array $attemptOverrides = [],
 ): ExerciseAttempt {
     $exercise = new Exercise(array_merge([
+        'title' => 'Laravel Posts CRUD',
         'correction_engine' => 'github_actions',
         'github_repo_url' => 'https://github.com/academy/laravel-posts-crud',
         'github_runner_ref' => 'main',
@@ -32,12 +34,13 @@ function githubDispatcherAttempt(
         'github_dispatch_token' => '6f0136e9-ff33-45bc-9cb9-3d864f342f77',
     ], $attemptOverrides));
 
+    $attempt->forceFill(['id' => 1]);
     $attempt->setRelation('exercise', $exercise);
 
     return $attempt;
 }
 
-it('dispatches the trusted GitHub workflow with attempt inputs', function () {
+it('dispatches to the runner repository and passes the student submission repo', function () {
     Http::fake([
         'https://api.github.com/*' => Http::response([], 204),
     ]);
@@ -56,10 +59,11 @@ it('dispatches the trusted GitHub workflow with attempt inputs', function () {
             && ($data['ref'] ?? null) === 'main'
             && ($data['inputs'] ?? null) === [
                 'attempt_token' => '6f0136e9-ff33-45bc-9cb9-3d864f342f77',
-                'student_repository_url' => 'https://github.com/student/laravel-posts-crud',
-                'student_branch' => 'student-12-laravel-posts-crud',
-                'student_commit_sha' => 'abc123',
+                'submission_id' => '1',
+                'exercise_slug' => 'laravel-posts-crud',
                 'test_suite' => 'laravel-posts-crud',
+                'student_branch' => 'student-12-laravel-posts-crud',
+                'student_repository' => 'https://github.com/student/laravel-posts-crud',
             ];
     });
 

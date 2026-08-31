@@ -71,6 +71,8 @@ class StudentExerciseController extends Controller
             'correction_engine' => $exercise->correction_engine,
             'exercise_type' => $exercise->exercise_type,
             'passing_score' => $exercise->passing_score,
+            'visibility' => 'published_for_student',
+            'assigned_to_student' => true,
 
             'topic' => [
                 'id' => $exercise->topic->id,

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\ExerciseAttempt;
 use App\Services\Exercises\GithubWorkflowDispatcher;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,6 +13,7 @@ use Throwable;
 
 class DispatchGithubExerciseAttempt implements ShouldQueue
 {
+    use Dispatchable;
     use Queueable;
 
     public int $tries = 1;
@@ -96,16 +98,25 @@ class DispatchGithubExerciseAttempt implements ShouldQueue
                 return null;
             }
 
-            if (
-                ! is_string($attempt->branch)
-                || ! str_starts_with(
-                    $attempt->branch,
-                    $exercise->github_branch_prefix,
-                )
-            ) {
+            $branch = $attempt->branch;
+            $invalidBranch = (
+                ! is_string($branch)
+                || filter_var($branch, FILTER_VALIDATE_URL)
+                || str_starts_with($branch, 'git@')
+                || str_contains($branch, 'github.com/')
+                || str_contains($branch, 'gitlab.com/')
+                || str_contains($branch, 'bitbucket.org/')
+            );
+
+            $prefixMismatch = is_string($branch)
+                && ! str_starts_with($branch, $exercise->github_branch_prefix);
+
+            if ($invalidBranch || $prefixMismatch) {
                 $this->markFailed(
                     $attempt,
-                    'The submitted branch does not match the required prefix.',
+                    $invalidBranch
+                        ? 'The submitted branch is invalid.'
+                        : 'The submitted branch does not match the required prefix.',
                 );
 
                 return null;

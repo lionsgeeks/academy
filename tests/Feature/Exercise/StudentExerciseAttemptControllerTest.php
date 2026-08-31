@@ -320,6 +320,34 @@ it('creates a queued GitHub repository attempt for a visible GitHub exercise', f
     );
 });
 
+it('rejects a repository URL in the student branch field', function () {
+    Queue::fake();
+
+    $student = createStudentAttemptUser();
+    $topic = createStudentAttemptTopic();
+
+    $exercise = createStudentAttemptExercise(
+        $topic,
+        1,
+        'github_actions',
+    );
+
+    makeStudentAttemptExerciseVisibleTo($exercise, $student);
+
+    $this
+        ->actingAs($student)
+        ->postJson(
+            route('student.exercises.attempts.store', $exercise),
+            [
+                'repository_url' => 'https://github.com/shitbank165-sketch/academy-exercises.git',
+                'branch' => 'https://github.com/shitbank165-sketch/academy-exercises.git',
+            ],
+        )
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['branch']);
+
+    expect(ExerciseAttempt::query()->count())->toBe(0);
+});
 
 it('creates sequential attempt numbers for the same student exercise', function () {
     $student = createStudentAttemptUser();

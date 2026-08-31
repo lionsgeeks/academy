@@ -155,6 +155,9 @@ it('returns only visible student exercises without private correction rules', fu
     expect($response->json('data.0'))
         ->not->toHaveKey('correction_rules');
 
+    expect($response->json('data.0.visibility'))->toBe('published_for_student')
+        ->and($response->json('data.0.assigned_to_student'))->toBeTrue();
+
     expect($response->json('data.0.id'))
         ->not->toBe($otherClassExercise->id)
         ->not->toBe($draftExercise->id);

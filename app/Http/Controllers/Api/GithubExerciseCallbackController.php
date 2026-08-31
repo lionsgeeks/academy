@@ -6,11 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\ExerciseAttempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class GithubExerciseCallbackController extends Controller
 {
     public function store(Request $request)
     {
+        Log::info('GitHub callback received', [
+            'path' => $request->path(),
+            'headers' => [
+                'x-academy-signature' => $request->header('X-Academy-Signature'),
+            ],
+            'body' => $request->all(),
+        ]);
+
         $this->ensureValidSignature($request);
 
         $data = $request->validate([
@@ -21,7 +30,7 @@ class GithubExerciseCallbackController extends Controller
             'status' => [
                 'required',
                 'string',
-                'in:completed,failed',
+                'in:completed,failed,passed',
             ],
             'score' => [
                 'nullable',
@@ -29,6 +38,7 @@ class GithubExerciseCallbackController extends Controller
                 'min:0',
                 'max:100',
                 'required_if:status,completed',
+                'required_if:status,passed',
             ],
             'passed' => [
                 'nullable',
@@ -97,13 +107,13 @@ class GithubExerciseCallbackController extends Controller
                 404,
             );
 
-            if ($data['status'] === 'completed') {
+            if ($data['status'] === 'failed') {
                 $attempt->forceFill([
-                    'status' => 'completed',
-                    'score' => $data['score'],
-                    'passed' => $data['passed'],
-                    'feedback' => $this->safeFeedback($data),
-                    'failure_reason' => null,
+                    'status' => 'failed',
+                    'score' => null,
+                    'passed' => null,
+                    'feedback' => null,
+                    'failure_reason' => $data['failure_reason'],
                     'completed_at' => now(),
                     'github_dispatch_token' => null,
                 ])->save();
@@ -112,11 +122,11 @@ class GithubExerciseCallbackController extends Controller
             }
 
             $attempt->forceFill([
-                'status' => 'failed',
-                'score' => null,
-                'passed' => null,
-                'feedback' => null,
-                'failure_reason' => $data['failure_reason'],
+                'status' => 'completed',
+                'score' => $data['score'],
+                'passed' => $data['status'] === 'passed' ? true : $data['passed'],
+                'feedback' => $this->safeFeedback($data),
+                'failure_reason' => null,
                 'completed_at' => now(),
                 'github_dispatch_token' => null,
             ])->save();

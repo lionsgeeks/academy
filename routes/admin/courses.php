@@ -51,9 +51,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [ExerciseController::class, 'store'],
     )->name('topics.exercises.store');
 
+    // Student exercises page - serves Inertia view
     Route::get(
         'student/exercises',
-        [StudentExerciseController::class, 'index'],
+        function (Request $request) {
+            abort_unless(
+                $request->user()
+                    && $request->user()
+                        ->Roles()
+                        ->where('role', 'student')
+                        ->exists(),
+                403,
+            );
+
+            if ($request->expectsJson()) {
+                return app(StudentExerciseController::class)->index(
+                    $request,
+                    app(\App\Services\Exercises\StudentExerciseVisibilityService::class),
+                );
+            }
+
+            return Inertia::render('student/exercises/index');
+        },
     )->name('student.exercises.index');
 
     Route::get('student/exercise-lab', function (Request $request) {
@@ -71,9 +90,58 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('student.exercise-lab.index');
 
+    // Student exercise detail page - serves Inertia view
     Route::get(
         'student/exercises/{exercise}',
-        [StudentExerciseController::class, 'show'],
+        function (Request $request, \App\Models\Exercise $exercise) {
+            abort_unless(
+                $request->user()
+                    && $request->user()
+                        ->Roles()
+                        ->where('role', 'student')
+                        ->exists(),
+                403,
+            );
+
+            if ($request->expectsJson()) {
+                return app(StudentExerciseController::class)->show(
+                    $request,
+                    $exercise,
+                    app(\App\Services\Exercises\StudentExerciseVisibilityService::class),
+                );
+            }
+
+            $exerciseVisibility = app(\App\Services\Exercises\StudentExerciseVisibilityService::class);
+            $visibleExercise = $exerciseVisibility->visibleExerciseFor($request->user(), $exercise);
+            
+            abort_unless($visibleExercise, 404);
+
+            return Inertia::render('student/exercises/show', [
+                'exercise' => [
+                    'id' => $visibleExercise->id,
+                    'title' => $visibleExercise->title,
+                    'description' => $visibleExercise->description,
+                    'difficulty' => $visibleExercise->difficulty,
+                    'xp_reward' => $visibleExercise->xp_reward,
+                    'correction_engine' => $visibleExercise->correction_engine,
+                    'exercise_type' => $visibleExercise->exercise_type,
+                    'passing_score' => $visibleExercise->passing_score,
+                    'topic' => [
+                        'id' => $visibleExercise->topic->id,
+                        'title' => $visibleExercise->topic->title,
+                        'concept' => [
+                            'id' => $visibleExercise->topic->concept->id,
+                            'title' => $visibleExercise->topic->concept->title,
+                            'course' => [
+                                'id' => $visibleExercise->topic->concept->course->id,
+                                'title' => $visibleExercise->topic->concept->course->title,
+                                'slug' => $visibleExercise->topic->concept->course->slug,
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+        },
     )->name('student.exercises.show');
 
     Route::post(

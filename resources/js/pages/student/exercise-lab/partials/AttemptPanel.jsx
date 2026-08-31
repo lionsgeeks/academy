@@ -89,6 +89,13 @@ export default function AttemptPanel({
                                     </div>
                                 ) : null}
 
+                                {attempt.failure_reason ? (
+                                    <div className="mt-3 rounded-md border border-red-700 bg-red-950/20 p-3 text-xs text-red-200">
+                                        <p className="font-medium">Failure reason</p>
+                                        <p>{attempt.failure_reason}</p>
+                                    </div>
+                                ) : null}
+
                                 {attempt.feedback ? (
                                     <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-50">
                                         {JSON.stringify(

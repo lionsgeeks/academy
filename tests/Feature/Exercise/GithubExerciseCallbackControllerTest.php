@@ -158,6 +158,42 @@ it('completes a processing attempt from a valid signed callback', function () {
         ->and($attempt->github_dispatched_at)->not->toBeNull();
 });
 
+it('completes a processing attempt from a valid signed callback with status passed', function () {
+    $attempt = createGithubCallbackAttempt();
+
+    $payload = [
+        'attempt_token' => $attempt->github_dispatch_token,
+        'status' => 'passed',
+        'score' => 100,
+        'message' => 'Hidden Laravel Tasks CRUD tests passed.',
+    ];
+
+    [$rawBody, $server] = signedGithubCallbackRequest($payload);
+
+    $this
+        ->call(
+            'POST',
+            route('api.exercises.github-callback'),
+            [],
+            [],
+            [],
+            $server,
+            $rawBody,
+        )
+        ->assertNoContent();
+
+    $attempt->refresh();
+
+    expect($attempt->status)->toBe('completed')
+        ->and($attempt->score)->toBe(100)
+        ->and($attempt->passed)->toBeTrue()
+        ->and($attempt->feedback)->toBeNull()
+        ->and($attempt->failure_reason)->toBeNull()
+        ->and($attempt->completed_at)->not->toBeNull()
+        ->and($attempt->github_dispatch_token)->toBeNull()
+        ->and($attempt->github_dispatched_at)->not->toBeNull();
+});
+
 it('fails a processing attempt from a valid signed callback', function () {
     $attempt = createGithubCallbackAttempt();
 

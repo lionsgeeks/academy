@@ -145,6 +145,23 @@ class StudentExerciseAttemptController extends Controller
                     );
                 }
 
+                if ($request->filled('branch')) {
+                    $branch = $request->input('branch');
+
+                    if (
+                        filter_var($branch, FILTER_VALIDATE_URL)
+                        || str_starts_with($branch, 'git@')
+                        || str_contains($branch, 'github.com/')
+                        || str_contains($branch, 'gitlab.com/')
+                        || str_contains($branch, 'bitbucket.org/')
+                    ) {
+                        $validator->errors()->add(
+                            'branch',
+                            'The branch must not be a repository URL.',
+                        );
+                    }
+                }
+
                 return;
             }
 
@@ -235,6 +252,8 @@ class StudentExerciseAttemptController extends Controller
             'source_type' => $attempt->source_type,
             'score' => $attempt->score,
             'passed' => $attempt->passed,
+            'failure_reason' => $attempt->failure_reason,
+            'github_dispatched_at' => $attempt->github_dispatched_at?->toISOString(),
             'feedback' => $this->publicFeedbackPayload($attempt),
             'repository_url' => $attempt->repository_url,
             'branch' => $attempt->branch,

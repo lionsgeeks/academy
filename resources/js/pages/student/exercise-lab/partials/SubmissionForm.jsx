@@ -115,15 +115,22 @@ export default function SubmissionForm({
                             </span>
                             <Input
                                 value={githubSource.branch}
-                                placeholder="main"
+                                placeholder="student-12-laravel-posts-crud"
                                 onChange={(event) =>
                                     onGithubSourceChange(
                                         'branch',
                                         event.target.value,
                                     )
                                 }
+                                autoComplete="off"
                                 className="border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500"
                             />
+                            <p className="text-xs text-slate-500">
+                                Enter the repository URL of your fork in the
+                                <strong> Repository URL</strong> field and the
+                                branch name you pushed in the <strong>Branch</strong>
+                                field (for example: <em>student-12-laravel-posts-crud</em>).
+                            </p>
                             {errors.branch ? (
                                 <span className="text-xs text-red-300">
                                     {errors.branch[0]}
