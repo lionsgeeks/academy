@@ -1,6 +1,25 @@
-import { Flame, Hash, Leaf, Star, Zap } from 'lucide-react';
+import {
+    Braces,
+    Flame,
+    Github,
+    Globe2,
+    Hash,
+    Leaf,
+    Rocket,
+    Star,
+    Users,
+    Zap,
+} from 'lucide-react';
 import { TransText } from '@/components/TransText';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import ExerciseField from './ExerciseField';
 import RulesJsonEditor from './RulesJsonEditor';
@@ -12,44 +31,244 @@ const DIFFICULTIES = [
     {
         value: 'beginner',
         icon: Leaf,
-        label: <TransText en="Beginner" fr="Beginner" ar="Beginner" />,
-        description: <TransText en="Guided tasks, clear steps" fr="Guided tasks, clear steps" ar="Guided tasks, clear steps" />,
+        label: <TransText en="Beginner" fr="Débutant" ar="مبتدئ" />,
+        description: (
+            <TransText
+                en="Guided tasks, clear steps"
+                fr="Tâches guidées, étapes claires"
+                ar="مهام موجهة وخطوات واضحة"
+            />
+        ),
         activeClass: 'border-good/60 bg-good/8 text-good dark:border-good/50 dark:bg-good/10',
         iconClass: 'text-good',
     },
     {
         value: 'intermediate',
         icon: Flame,
-        label: <TransText en="Intermediate" fr="Intermediate" ar="Intermediate" />,
-        description: <TransText en="Requires prior knowledge" fr="Requires prior knowledge" ar="Requires prior knowledge" />,
+        label: <TransText en="Intermediate" fr="Intermédiaire" ar="متوسط" />,
+        description: (
+            <TransText
+                en="Requires prior knowledge"
+                fr="Nécessite des connaissances préalables"
+                ar="يتطلب معرفة مسبقة"
+            />
+        ),
         activeClass: 'border-beta bg-beta/8 text-beta dark:border-alpha/60 dark:bg-alpha/10 dark:text-alpha',
         iconClass: 'text-beta dark:text-alpha',
     },
     {
         value: 'advanced',
         icon: Zap,
-        label: <TransText en="Advanced" fr="Advanced" ar="Advanced" />,
-        description: <TransText en="Complex, open-ended challenge" fr="Complex, open-ended challenge" ar="Complex, open-ended challenge" />,
+        label: <TransText en="Advanced" fr="Avancé" ar="متقدم" />,
+        description: (
+            <TransText
+                en="Complex, open-ended challenge"
+                fr="Défi complexe et ouvert"
+                ar="تحدٍ معقد ومفتوح"
+            />
+        ),
         activeClass: 'border-error/60 bg-error/8 text-error dark:border-error/50 dark:bg-error/10',
         iconClass: 'text-error',
     },
 ];
 
-export default function StepSettings({ data, errors, onChange }) {
+const ENGINE_OPTIONS = [
+    {
+        value: 'browser',
+        icon: Globe2,
+        label: (
+            <TransText
+                en="Browser validation"
+                fr="Validation navigateur"
+                ar="التحقق في المتصفح"
+            />
+        ),
+    },
+    {
+        value: 'github_actions',
+        icon: Github,
+        label: (
+            <TransText
+                en="GitHub Actions"
+                fr="GitHub Actions"
+                ar="GitHub Actions"
+            />
+        ),
+    },
+];
+
+const EXERCISE_TYPES = {
+    browser: [
+        {
+            value: 'html',
+            label: 'HTML',
+        },
+        {
+            value: 'css',
+            label: 'CSS',
+        },
+        {
+            value: 'javascript',
+            label: 'JavaScript',
+        },
+        {
+            value: 'html_css_javascript',
+            label: 'HTML + CSS + JavaScript',
+        },
+    ],
+    github_actions: [
+        {
+            value: 'laravel',
+            label: 'Laravel',
+        },
+        {
+            value: 'react',
+            label: 'React',
+        },
+    ],
+};
+
+export default function StepSettings({
+    data,
+    errors,
+    onChange,
+    publishableClasses = [],
+}) {
+    const engine = data.correction_engine || 'browser';
+    const availableTypes = EXERCISE_TYPES[engine] ?? [];
+    const selectedClassIds = data.class_ids ?? [];
+
+    const classLabel = (classItem) => {
+        const formattedType = classItem.type
+            ? `${classItem.type.charAt(0).toUpperCase()}${classItem.type.slice(1)}`
+            : 'Class';
+
+        return `Promo ${classItem.promo} · ${formattedType} ${classItem.class}`;
+    };
+
+    const toggleClass = (classId) => {
+        const normalizedId = Number(classId);
+
+        const nextClassIds = selectedClassIds.includes(normalizedId)
+            ? selectedClassIds.filter((id) => id !== normalizedId)
+            : [...selectedClassIds, normalizedId];
+
+        onChange('class_ids', nextClassIds);
+    };
+
+    const changeEngine = (nextEngine) => {
+        const nextTypes = EXERCISE_TYPES[nextEngine] ?? [];
+
+        onChange('correction_engine', nextEngine);
+        onChange('exercise_type', nextTypes[0]?.value ?? '');
+    };
+
     return (
         <div className="space-y-8">
-            {/* Difficulty cards */}
+            {errors.submission && (
+                <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+                    {errors.submission}
+                </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+                <ExerciseField
+                    id="correction_engine"
+                    label={
+                        <span className="flex items-center gap-1.5">
+                            <Rocket className="size-3.5 text-beta/50 dark:text-light/50" />
+                            <TransText
+                                en="Correction method"
+                                fr="Méthode de correction"
+                                ar="طريقة التصحيح"
+                            />
+                        </span>
+                    }
+                    error={errors.correction_engine}
+                >
+                    <Select
+                        value={engine}
+                        onValueChange={changeEngine}
+                    >
+                        <SelectTrigger className={cn(inputClass, 'w-full')}>
+                            <SelectValue />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                            {ENGINE_OPTIONS.map((option) => {
+                                const Icon = option.icon;
+
+                                return (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <Icon className="size-3.5 text-alpha" />
+                                            {option.label}
+                                        </span>
+                                    </SelectItem>
+                                );
+                            })}
+                        </SelectContent>
+                    </Select>
+                </ExerciseField>
+
+                <ExerciseField
+                    id="exercise_type"
+                    label={
+                        <span className="flex items-center gap-1.5">
+                            <Braces className="size-3.5 text-beta/50 dark:text-light/50" />
+                            <TransText
+                                en="Exercise type"
+                                fr="Type d'exercice"
+                                ar="نوع التمرين"
+                            />
+                        </span>
+                    }
+                    error={errors.exercise_type}
+                >
+                    <Select
+                        value={data.exercise_type}
+                        onValueChange={(value) =>
+                            onChange('exercise_type', value)
+                        }
+                    >
+                        <SelectTrigger className={cn(inputClass, 'w-full')}>
+                            <SelectValue />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                            {availableTypes.map((type) => (
+                                <SelectItem
+                                    key={type.value}
+                                    value={type.value}
+                                >
+                                    {type.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </ExerciseField>
+            </div>
+
             <div className="space-y-2">
                 <div className="flex items-center gap-2">
                     <Flame className="size-3.5 text-beta/50 dark:text-light/50" />
                     <span className="text-sm font-medium text-beta dark:text-light">
-                        <TransText en="Difficulty" fr="Difficulty" ar="Difficulty" />
+                        <TransText
+                            en="Difficulty"
+                            fr="Difficulté"
+                            ar="الصعوبة"
+                        />
                     </span>
                 </div>
+
                 <div className="grid gap-3 sm:grid-cols-3">
                     {DIFFICULTIES.map((item) => {
                         const Icon = item.icon;
                         const isActive = data.difficulty === item.value;
+
                         return (
                             <button
                                 key={item.value}
@@ -65,21 +284,29 @@ export default function StepSettings({ data, errors, onChange }) {
                                 <Icon
                                     className={cn(
                                         'size-5 transition-colors',
-                                        isActive ? item.iconClass : 'text-beta/30 dark:text-light/30',
+                                        isActive
+                                            ? item.iconClass
+                                            : 'text-beta/30 dark:text-light/30',
                                     )}
                                 />
+
                                 <span
                                     className={cn(
                                         'text-sm font-semibold',
-                                        isActive ? '' : 'text-beta/70 dark:text-light/70',
+                                        isActive
+                                            ? ''
+                                            : 'text-beta/70 dark:text-light/70',
                                     )}
                                 >
                                     {item.label}
                                 </span>
+
                                 <span
                                     className={cn(
                                         'text-xs leading-snug',
-                                        isActive ? 'opacity-80' : 'text-beta/40 dark:text-light/40',
+                                        isActive
+                                            ? 'opacity-80'
+                                            : 'text-beta/40 dark:text-light/40',
                                     )}
                                 >
                                     {item.description}
@@ -88,19 +315,23 @@ export default function StepSettings({ data, errors, onChange }) {
                         );
                     })}
                 </div>
+
                 {errors.difficulty && (
                     <p className="text-sm text-error">{errors.difficulty}</p>
                 )}
             </div>
 
-            {/* XP + Order */}
             <div className="grid gap-4 sm:grid-cols-2">
                 <ExerciseField
                     id="xp_reward"
                     label={
                         <span className="flex items-center gap-1.5">
                             <Star className="size-3.5 text-beta/50 dark:text-alpha" />
-                            <TransText en="XP reward" fr="XP reward" ar="XP reward" />
+                            <TransText
+                                en="XP reward"
+                                fr="Récompense XP"
+                                ar="مكافأة XP"
+                            />
                         </span>
                     }
                     error={errors.xp_reward}
@@ -111,8 +342,8 @@ export default function StepSettings({ data, errors, onChange }) {
                         min={0}
                         step={10}
                         value={data.xp_reward}
-                        onChange={(e) =>
-                            onChange('xp_reward', Number(e.target.value))
+                        onChange={(event) =>
+                            onChange('xp_reward', Number(event.target.value))
                         }
                         className={inputClass}
                     />
@@ -123,7 +354,11 @@ export default function StepSettings({ data, errors, onChange }) {
                     label={
                         <span className="flex items-center gap-1.5">
                             <Hash className="size-3.5 text-beta/50 dark:text-light/50" />
-                            <TransText en="Order index" fr="Order index" ar="Order index" />
+                            <TransText
+                                en="Order index"
+                                fr="Ordre"
+                                ar="ترتيب التمرين"
+                            />
                         </span>
                     }
                     error={errors.order_index}
@@ -133,16 +368,287 @@ export default function StepSettings({ data, errors, onChange }) {
                         type="number"
                         min={1}
                         value={data.order_index}
-                        onChange={(e) =>
-                            onChange('order_index', Number(e.target.value))
+                        onChange={(event) =>
+                            onChange('order_index', Number(event.target.value))
                         }
                         className={inputClass}
                     />
                 </ExerciseField>
             </div>
 
-            {/* Rules */}
-            <RulesJsonEditor data={data} errors={errors} onChange={onChange} />
+            <ExerciseField
+                id="status"
+                label={
+                    <span className="flex items-center gap-1.5">
+                        <Rocket className="size-3.5 text-beta/50 dark:text-light/50" />
+                        <TransText
+                            en="Exercise status"
+                            fr="Statut de l'exercice"
+                            ar="حالة التمرين"
+                        />
+                    </span>
+                }
+                error={errors.status}
+            >
+                <Select
+                    value={data.status}
+                    onValueChange={(value) => onChange('status', value)}
+                >
+                    <SelectTrigger className={cn(inputClass, 'w-full')}>
+                        <SelectValue />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                        <SelectItem value="draft">
+                            <TransText
+                                en="Draft"
+                                fr="Brouillon"
+                                ar="مسودة"
+                            />
+                        </SelectItem>
+
+                        <SelectItem value="published">
+                            <TransText
+                                en="Publish now"
+                                fr="Publier maintenant"
+                                ar="نشر الآن"
+                            />
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </ExerciseField>
+
+            {data.status === 'published' && (
+                <div className="space-y-3 rounded-xl border border-alpha/25 bg-alpha/5 p-4">
+                    <div className="flex items-start gap-2">
+                        <Users className="mt-0.5 size-4 text-alpha" />
+
+                        <div>
+                            <p className="text-sm font-medium text-beta dark:text-light">
+                                <TransText
+                                    en="Publish to current classes"
+                                    fr="Publier pour les classes actuelles"
+                                    ar="النشر للأقسام الحالية"
+                                />
+                            </p>
+
+                            <p className="mt-0.5 text-xs leading-5 text-beta/55 dark:text-light/55">
+                                <TransText
+                                    en="Only eligible classes are shown. Finished classes and classes that have not started are excluded."
+                                    fr="Seules les classes éligibles sont affichées. Les classes terminées et celles qui n'ont pas commencé sont exclues."
+                                    ar="تظهر فقط الأقسام المؤهلة. يتم استبعاد الأقسام المنتهية والأقسام التي لم تبدأ بعد."
+                                />
+                            </p>
+                        </div>
+                    </div>
+
+                    {publishableClasses.length === 0 ? (
+                        <p className="rounded-lg border border-dashed border-beta/20 px-3 py-3 text-sm text-beta/55 dark:border-light/20 dark:text-light/55">
+                            <TransText
+                                en="No current class is available. Save this exercise as a draft."
+                                fr="Aucune classe actuelle n'est disponible. Enregistrez cet exercice comme brouillon."
+                                ar="لا يوجد قسم حالي متاح. احفظ هذا التمرين كمسودة."
+                            />
+                        </p>
+                    ) : (
+                        <div className="space-y-2">
+                            {publishableClasses.map((classItem) => {
+                                const checked = selectedClassIds.includes(
+                                    Number(classItem.id),
+                                );
+
+                                return (
+                                    <label
+                                        key={classItem.id}
+                                        className={cn(
+                                            'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 transition-colors',
+                                            checked
+                                                ? 'border-alpha/50 bg-alpha/10'
+                                                : 'border-beta/10 hover:border-beta/25 dark:border-light/10 dark:hover:border-light/25',
+                                        )}
+                                    >
+                                        <Checkbox
+                                            checked={checked}
+                                            onCheckedChange={() =>
+                                                toggleClass(classItem.id)
+                                            }
+                                            className="data-[state=checked]:border-alpha data-[state=checked]:bg-alpha data-[state=checked]:text-beta"
+                                        />
+
+                                        <span className="min-w-0">
+                                            <span className="block text-sm font-medium text-beta dark:text-light">
+                                                {classLabel(classItem)}
+                                            </span>
+
+                                            <span className="block text-xs text-beta/45 dark:text-light/45">
+                                                <TransText
+                                                    en="Exact class target"
+                                                    fr="Classe ciblée"
+                                                    ar="قسم مستهدف"
+                                                />
+                                            </span>
+                                        </span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {errors.class_ids && (
+                        <p className="text-sm text-error">{errors.class_ids}</p>
+                    )}
+                </div>
+            )}
+
+            {engine === 'browser' ? (
+                <RulesJsonEditor
+                    data={data}
+                    errors={{
+                        ...errors,
+                        rules: errors.correction_rules ?? errors.rules,
+                    }}
+                    onChange={onChange}
+                />
+            ) : (
+                <div className="space-y-4 rounded-xl border border-alpha/25 bg-alpha/5 p-4">
+                    <div className="flex items-start gap-2">
+                        <Github className="mt-0.5 size-4 text-alpha" />
+
+                        <div>
+                            <p className="text-sm font-medium text-beta dark:text-light">
+                                <TransText
+                                    en="GitHub Actions runner configuration"
+                                    fr="Configuration du runner GitHub Actions"
+                                    ar="إعدادات مشغل GitHub Actions"
+                                />
+                            </p>
+
+                            <p className="mt-0.5 text-xs leading-5 text-beta/55 dark:text-light/55">
+                                <TransText
+                                    en="These values stay optional while the exercise is a draft. They are required before publishing."
+                                    fr="Ces valeurs restent facultatives tant que l'exercice est un brouillon. Elles sont requises avant la publication."
+                                    ar="تبقى هذه القيم اختيارية ما دام التمرين مسودة، وتصبح مطلوبة قبل النشر."
+                                />
+                            </p>
+                        </div>
+                    </div>
+
+                    <ExerciseField
+                        id="github_repo_url"
+                        label={
+                            <TransText
+                                en="Trusted runner repository URL"
+                                fr="URL du dépôt runner approuvé"
+                                ar="رابط مستودع المشغل الموثوق"
+                            />
+                        }
+                        error={errors.github_repo_url}
+                    >
+                        <Input
+                            id="github_repo_url"
+                            type="url"
+                            placeholder="https://github.com/academy/laravel-posts-crud"
+                            value={data.github_repo_url ?? ''}
+                            onChange={(event) =>
+                                onChange('github_repo_url', event.target.value)
+                            }
+                            className={inputClass}
+                        />
+                    </ExerciseField>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <ExerciseField
+                            id="github_runner_ref"
+                            label={
+                                <TransText
+                                    en="Runner branch or ref"
+                                    fr="Branche ou ref du runner"
+                                    ar="فرع أو ref المشغل"
+                                />
+                            }
+                            error={errors.github_runner_ref}
+                        >
+                            <Input
+                                id="github_runner_ref"
+                                placeholder="main"
+                                value={data.github_runner_ref ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_runner_ref', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+
+                        <ExerciseField
+                            id="github_workflow"
+                            label={
+                                <TransText
+                                    en="Workflow filename"
+                                    fr="Nom du fichier workflow"
+                                    ar="اسم ملف workflow"
+                                />
+                            }
+                            error={errors.github_workflow}
+                        >
+                            <Input
+                                id="github_workflow"
+                                placeholder="evaluate-laravel.yml"
+                                value={data.github_workflow ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_workflow', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <ExerciseField
+                            id="github_test_suite"
+                            label={
+                                <TransText
+                                    en="Test suite name"
+                                    fr="Nom de la suite de tests"
+                                    ar="اسم مجموعة الاختبارات"
+                                />
+                            }
+                            error={errors.github_test_suite}
+                        >
+                            <Input
+                                id="github_test_suite"
+                                placeholder="laravel-posts-crud"
+                                value={data.github_test_suite ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_test_suite', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+
+                        <ExerciseField
+                            id="github_branch_prefix"
+                            label={
+                                <TransText
+                                    en="Required student branch prefix"
+                                    fr="Préfixe de branche étudiant requis"
+                                    ar="بادئة فرع الطالب المطلوبة"
+                                />
+                            }
+                            error={errors.github_branch_prefix}
+                        >
+                            <Input
+                                id="github_branch_prefix"
+                                placeholder="student-"
+                                value={data.github_branch_prefix ?? ''}
+                                onChange={(event) =>
+                                    onChange('github_branch_prefix', event.target.value)
+                                }
+                                className={inputClass}
+                            />
+                        </ExerciseField>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

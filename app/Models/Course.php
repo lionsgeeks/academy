@@ -44,6 +44,13 @@ class Course extends Model
             ->withTimestamps();
     }
 
+    public function publishablePromotions(): BelongsToMany
+    {
+        return $this->promotions()
+            ->where('promotions.status', 'active')
+            ->wherePivot('status', 'active');
+    }
+
     protected function casts(): array
     {
         return [

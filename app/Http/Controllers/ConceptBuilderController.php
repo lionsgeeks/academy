@@ -12,12 +12,17 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use App\Services\Exercises\ExerciseClassEligibilityService;
 
 class ConceptBuilderController extends Controller
 {
     private const RESOURCE_UPLOAD_DIRECTORY = 'topic-resources';
 
-    public function edit(Request $request, Concept $concept)
+    public function edit(
+        Request $request,
+        Concept $concept,
+        ExerciseClassEligibilityService $classEligibility,
+    )
     {
         $this->ensureCanManageConcept($request, $concept);
 
@@ -26,8 +31,31 @@ class ConceptBuilderController extends Controller
             'topics.lessons' => fn ($query) => $query->orderBy('order_index'),
             'topics.resources',
             'topics.quizzes',
-            'topics.exercises',
+            'topics.exercises' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'topic_id',
+                    'title',
+                    'difficulty',
+                    'xp_reward',
+                    'correction_engine',
+                    'exercise_type',
+                    'status',
+                    'order_index',
+                ])
+                ->orderBy('order_index'),
         ]);
+
+        $publishableClasses = $classEligibility
+            ->currentClassesFor($request->user())
+            ->map(fn ($classItem) => [
+                'id' => $classItem->id,
+                'name' => $classItem->name,
+                'promo' => $classItem->promo,
+                'type' => $classItem->type,
+                'class' => $classItem->class,
+            ])
+            ->values();
 
         return Inertia::render('concepts/index', [
             'concept' => [
@@ -37,6 +65,7 @@ class ConceptBuilderController extends Controller
                 'description' => $concept->description,
             ],
             'topics' => $concept->topics->map(fn (Topic $topic) => $this->transformTopic($topic))->values(),
+            'publishableClasses' => $publishableClasses,
         ]);
     }
 
@@ -295,8 +324,7 @@ class ConceptBuilderController extends Controller
             'status' => 'draft',
             'hasQuiz' => $topic->quizzes->isNotEmpty(),
             'hasExercise' => $topic->exercises->isNotEmpty(),
+            'exercises' => $topic->exercises->values(),
         ];
     }
 }
-
-

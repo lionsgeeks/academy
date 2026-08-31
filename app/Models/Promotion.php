@@ -34,6 +34,12 @@ class Promotion extends Model
             ->withTimestamps();
     }
 
+    public function exercises(): BelongsToMany
+    {
+        return $this->belongsToMany(Exercise::class, 'exercise_promotion')
+            ->withTimestamps();
+    }
+
     protected function casts(): array
     {
         return [

@@ -74,6 +74,11 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(ClassroomAttendance::class);
     }
 
+    public function exerciseAttempts(): HasMany
+    {
+        return $this->hasMany(ExerciseAttempt::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -104,9 +109,15 @@ class User extends Authenticatable implements PasskeyUser
     }
     public function classes()
     {
-        return $this->belongsToMany(Classes::class, "user_class");
+        return $this->belongsToMany(
+            Classes::class,
+            'user_classes',
+            'user_id',
+            'classes_id',
+        )->withPivot('role_id')
+            ->withTimestamps();
     }
-    
+
     public function wakatime()
     {
         return $this->hasOne(WakaTime::class);

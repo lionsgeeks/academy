@@ -1,10 +1,15 @@
 import {
+    Braces,
     FileJson,
     Flame,
+    Github,
+    Globe2,
     Hash,
     Leaf,
+    Rocket,
     Star,
     Type,
+    Users,
     Zap,
 } from 'lucide-react';
 import { TransText } from '@/components/TransText';
@@ -17,17 +22,17 @@ import MarkdownPreview from './MarkdownPreview';
 const DIFFICULTY_CONFIG = {
     beginner: {
         icon: Leaf,
-        label: <TransText en="Beginner" fr="Beginner" ar="Beginner" />,
+        label: <TransText en="Beginner" fr="Débutant" ar="مبتدئ" />,
         cls: 'border-good/40 bg-good/10 text-good',
     },
     intermediate: {
         icon: Flame,
-        label: <TransText en="Intermediate" fr="Intermediate" ar="Intermediate" />,
+        label: <TransText en="Intermediate" fr="Intermédiaire" ar="متوسط" />,
         cls: 'border-alpha/50 bg-alpha/10 text-alpha',
     },
     advanced: {
         icon: Zap,
-        label: <TransText en="Advanced" fr="Advanced" ar="Advanced" />,
+        label: <TransText en="Advanced" fr="Avancé" ar="متقدم" />,
         cls: 'border-error/40 bg-error/10 text-error',
     },
 };
@@ -48,6 +53,7 @@ function ReviewSection({ icon: Icon, label, children }) {
                     {label}
                 </span>
             </div>
+
             {children}
         </div>
     );
@@ -60,23 +66,60 @@ function MetricCard({ icon: Icon, label, value, valueClass = '' }) {
                 <Icon className="size-3.5" />
                 {label}
             </div>
-            <span className={cn('text-lg font-bold text-beta dark:text-light', valueClass)}>
+
+            <span
+                className={cn(
+                    'text-lg font-bold text-beta dark:text-light',
+                    valueClass,
+                )}
+            >
                 {value}
             </span>
         </div>
     );
 }
 
-export default function StepReview({ data }) {
-    const isMarkdown = data.description_format === DESCRIPTION_FORMATS.MARKDOWN;
+function exerciseTypeLabel(type) {
+    const labels = {
+        html: 'HTML',
+        css: 'CSS',
+        javascript: 'JavaScript',
+        html_css_javascript: 'HTML + CSS + JavaScript',
+        laravel: 'Laravel',
+        react: 'React',
+    };
+
+    return labels[type] ?? type ?? '—';
+}
+
+export default function StepReview({
+    data,
+    publishableClasses = [],
+}) {
+    const isMarkdown =
+        data.description_format === DESCRIPTION_FORMATS.MARKDOWN;
+
     const difficulty = DIFFICULTY_CONFIG[data.difficulty];
+
+    const classLabel = (classItem) => {
+        const formattedType = classItem.type
+            ? `${classItem.type.charAt(0).toUpperCase()}${classItem.type.slice(1)}`
+            : 'Class';
+
+        return `Promo ${classItem.promo} · ${formattedType} ${classItem.class}`;
+    };
+
+    const selectedClasses = publishableClasses.filter((classItem) =>
+        (data.class_ids ?? []).includes(Number(classItem.id)),
+    );
+
+    const isBrowser = data.correction_engine === 'browser';
 
     return (
         <div className="space-y-6">
-            {/* Title */}
             <ReviewSection
                 icon={Type}
-                label={<TransText en="Title" fr="Title" ar="Title" />}
+                label={<TransText en="Title" fr="Titre" ar="العنوان" />}
             >
                 <p className="rounded-xl border border-beta/10 bg-beta/5 px-4 py-3 text-sm font-medium text-beta dark:border-light/10 dark:bg-light/5 dark:text-light">
                     {data.title || '—'}
@@ -85,12 +128,16 @@ export default function StepReview({ data }) {
 
             <Separator className="bg-beta/8 dark:bg-light/8" />
 
-            {/* Description */}
             <ReviewSection
                 icon={Type}
                 label={
                     <span className="flex items-center gap-2">
-                        <TransText en="Description" fr="Description" ar="Description" />
+                        <TransText
+                            en="Description"
+                            fr="Description"
+                            ar="الوصف"
+                        />
+
                         <Badge
                             variant="outline"
                             className="rounded-full px-2 py-0 text-[10px] capitalize text-beta/50 dark:text-light/50"
@@ -108,29 +155,43 @@ export default function StepReview({ data }) {
                 >
                     {isMarkdown ? (
                         data.description_markdown.trim() ? (
-                            <MarkdownPreview>{data.description_markdown}</MarkdownPreview>
+                            <MarkdownPreview>
+                                {data.description_markdown}
+                            </MarkdownPreview>
                         ) : (
-                            <span className="text-sm text-beta/30 dark:text-light/30">—</span>
+                            <span className="text-sm text-beta/30 dark:text-light/30">
+                                —
+                            </span>
                         )
-                    ) : data.description_html.replace(/<[^>]*>/g, '').trim() ? (
+                    ) : data.description_html
+                        .replace(/<[^>]*>/g, '')
+                        .trim() ? (
                         <div
-                            dangerouslySetInnerHTML={{ __html: data.description_html }}
+                            dangerouslySetInnerHTML={{
+                                __html: data.description_html,
+                            }}
                         />
                     ) : (
-                        <span className="text-sm text-beta/30 dark:text-light/30">—</span>
+                        <span className="text-sm text-beta/30 dark:text-light/30">
+                            —
+                        </span>
                     )}
                 </div>
             </ReviewSection>
 
             <Separator className="bg-beta/8 dark:bg-light/8" />
 
-            {/* Difficulty + metrics */}
             <div className="space-y-4">
-                {/* Difficulty badge */}
                 {difficulty ? (
                     <ReviewSection
                         icon={difficulty.icon}
-                        label={<TransText en="Difficulty" fr="Difficulty" ar="Difficulty" />}
+                        label={
+                            <TransText
+                                en="Difficulty"
+                                fr="Difficulté"
+                                ar="الصعوبة"
+                            />
+                        }
                     >
                         <div
                             className={cn(
@@ -144,17 +205,29 @@ export default function StepReview({ data }) {
                     </ReviewSection>
                 ) : null}
 
-                {/* XP + Order metrics */}
                 <div className="grid grid-cols-2 gap-3">
                     <MetricCard
                         icon={Star}
-                        label={<TransText en="XP reward" fr="XP reward" ar="XP reward" />}
+                        label={
+                            <TransText
+                                en="XP reward"
+                                fr="Récompense XP"
+                                ar="مكافأة XP"
+                            />
+                        }
                         value={`+${data.xp_reward}`}
                         valueClass="text-beta dark:text-alpha"
                     />
+
                     <MetricCard
                         icon={Hash}
-                        label={<TransText en="Order" fr="Order" ar="Order" />}
+                        label={
+                            <TransText
+                                en="Order"
+                                fr="Ordre"
+                                ar="الترتيب"
+                            />
+                        }
                         value={`#${data.order_index}`}
                     />
                 </div>
@@ -162,27 +235,235 @@ export default function StepReview({ data }) {
 
             <Separator className="bg-beta/8 dark:bg-light/8" />
 
-            {/* Rules */}
             <ReviewSection
-                icon={FileJson}
-                label={<TransText en="Grading rules" fr="Grading rules" ar="Grading rules" />}
+                icon={isBrowser ? Globe2 : Github}
+                label={
+                    <TransText
+                        en="Correction setup"
+                        fr="Configuration de correction"
+                        ar="إعداد التصحيح"
+                    />
+                }
             >
-                {data.rules ? (
-                    <div className="space-y-2">
-                        {data.rulesFileName && (
-                            <div className="flex items-center gap-2 text-xs text-beta/50 dark:text-light/50">
-                                <FileJson className="size-3.5 text-beta dark:text-alpha" />
-                                {data.rulesFileName}
-                            </div>
-                        )}
-                        <pre className="custom-scrollbar max-h-44 overflow-auto rounded-xl border border-beta/10 bg-beta/5 p-3 text-xs text-beta dark:border-light/10 dark:bg-light/5 dark:text-light">
-                            {JSON.stringify(data.rules, null, 2)}
-                        </pre>
-                    </div>
-                ) : (
-                    <span className="text-sm text-beta/30 dark:text-light/30">—</span>
-                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <MetricCard
+                        icon={isBrowser ? Globe2 : Github}
+                        label={
+                            <TransText
+                                en="Method"
+                                fr="Méthode"
+                                ar="الطريقة"
+                            />
+                        }
+                        value={
+                            isBrowser ? (
+                                <TransText
+                                    en="Browser"
+                                    fr="Navigateur"
+                                    ar="المتصفح"
+                                />
+                            ) : (
+                                'GitHub Actions'
+                            )
+                        }
+                    />
+
+                    <MetricCard
+                        icon={Braces}
+                        label={
+                            <TransText
+                                en="Type"
+                                fr="Type"
+                                ar="النوع"
+                            />
+                        }
+                        value={exerciseTypeLabel(data.exercise_type)}
+                    />
+                </div>
             </ReviewSection>
+
+                          {!isBrowser && (
+                <>
+                    <Separator className="bg-beta/8 dark:bg-light/8" />
+
+                    <ReviewSection
+                        icon={Github}
+                        label={
+                            <TransText
+                                en="GitHub runner configuration"
+                                fr="Configuration du runner GitHub"
+                                ar="إعدادات مشغل GitHub"
+                            />
+                        }
+                    >
+                        <div className="space-y-3 rounded-xl border border-alpha/25 bg-alpha/5 p-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <MetricCard
+                                    icon={Github}
+                                    label={
+                                        <TransText
+                                            en="Runner ref"
+                                            fr="Ref du runner"
+                                            ar="مرجع المشغل"
+                                        />
+                                    }
+                                    value={data.github_runner_ref || '—'}
+                                />
+
+                                <MetricCard
+                                    icon={FileJson}
+                                    label={
+                                        <TransText
+                                            en="Workflow"
+                                            fr="Workflow"
+                                            ar="Workflow"
+                                        />
+                                    }
+                                    value={data.github_workflow || '—'}
+                                />
+
+                                <MetricCard
+                                    icon={Braces}
+                                    label={
+                                        <TransText
+                                            en="Test suite"
+                                            fr="Suite de tests"
+                                            ar="مجموعة الاختبارات"
+                                        />
+                                    }
+                                    value={data.github_test_suite || '—'}
+                                />
+
+                                <MetricCard
+                                    icon={Hash}
+                                    label={
+                                        <TransText
+                                            en="Student branch prefix"
+                                            fr="Préfixe de branche étudiant"
+                                            ar="بادئة فرع الطالب"
+                                        />
+                                    }
+                                    value={data.github_branch_prefix || '—'}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <p className="text-xs font-medium text-beta/60 dark:text-light/60">
+                                    <TransText
+                                        en="Trusted runner repository"
+                                        fr="Dépôt runner approuvé"
+                                        ar="مستودع المشغل الموثوق"
+                                    />
+                                </p>
+
+                                <p className="break-all rounded-lg border border-beta/10 bg-beta/5 px-3 py-2 font-mono text-xs text-beta dark:border-light/10 dark:bg-light/5 dark:text-light">
+                                    {data.github_repo_url || '—'}
+                                </p>
+                            </div>
+                        </div>
+                    </ReviewSection>
+                </>
+            )}
+
+
+            <Separator className="bg-beta/8 dark:bg-light/8" />
+
+            <ReviewSection
+                icon={Rocket}
+                label={
+                    <TransText
+                        en="Publication"
+                        fr="Publication"
+                        ar="النشر"
+                    />
+                }
+            >
+                <div className="rounded-xl border border-beta/10 bg-beta/5 px-4 py-3 text-sm text-beta dark:border-light/10 dark:bg-light/5 dark:text-light">
+                    {data.status === 'published' ? (
+                        <TransText
+                            en="Published immediately"
+                            fr="Publié immédiatement"
+                            ar="سيتم النشر فوراً"
+                        />
+                    ) : (
+                        <TransText
+                            en="Saved as draft"
+                            fr="Enregistré comme brouillon"
+                            ar="سيتم الحفظ كمسودة"
+                        />
+                    )}
+                </div>
+            </ReviewSection>
+
+            {data.status === 'published' && (
+                <>
+                    <Separator className="bg-beta/8 dark:bg-light/8" />
+
+                    <ReviewSection
+                        icon={Users}
+                        label={
+                            <TransText
+                                en="Target classes"
+                                fr="Classes ciblées"
+                                ar="الأقسام المستهدفة"
+                            />
+                        }
+                    >
+                        {selectedClasses.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {selectedClasses.map((classItem) => (
+                                    <Badge
+                                        key={classItem.id}
+                                        variant="outline"
+                                        className="border-alpha/40 bg-alpha/10 text-beta dark:text-alpha"
+                                    >
+                                        {classLabel(classItem)}
+                                    </Badge>
+                                ))}
+                            </div>
+                        ) : (
+                            <span className="text-sm text-error">
+                                <TransText
+                                    en="No current class selected."
+                                    fr="Aucune classe actuelle sélectionnée."
+                                    ar="لم يتم اختيار أي قسم حالي."
+                                />
+                            </span>
+                        )}
+                    </ReviewSection>
+                </>
+            )}
+
+            {isBrowser && (
+                <>
+                    <Separator className="bg-beta/8 dark:bg-light/8" />
+
+                    <ReviewSection
+                        icon={FileJson}
+                        label={
+                            <TransText
+                                en="Browser correction rules"
+                                fr="Règles de correction navigateur"
+                                ar="قواعد تصحيح المتصفح"
+                            />
+                        }
+                    >
+                        {data.rules ? (
+                            <pre className="custom-scrollbar max-h-44 overflow-auto rounded-xl border border-beta/10 bg-beta/5 p-3 text-xs text-beta dark:border-light/10 dark:bg-light/5 dark:text-light">
+                                {JSON.stringify(data.rules, null, 2)}
+                            </pre>
+                        ) : (
+                            <span className="text-sm text-error">
+                                <TransText
+                                    en="Correction rules are required."
+                                    fr="Les règles de correction sont requises."
+                                    ar="قواعد التصحيح مطلوبة."
+                                />
+                            </span>
+                        )}
+                    </ReviewSection>
+                </>
+            )}
         </div>
     );
 }

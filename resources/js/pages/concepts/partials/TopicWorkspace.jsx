@@ -1,7 +1,11 @@
 import VideoSection from './VideoSection';
 import LessonTabs from './LessonTabs';
 
-export default function TopicWorkspace({ topic, onUpdateTopic }) {
+export default function TopicWorkspace({
+    topic,
+    publishableClasses = [],
+    onUpdateTopic,
+}) {
     if (!topic) {
         return (
             <main className="flex-1 bg-background flex items-center justify-center">
@@ -28,6 +32,7 @@ export default function TopicWorkspace({ topic, onUpdateTopic }) {
 
                     <LessonTabs
                         topic={topic}
+                        publishableClasses={publishableClasses}
                         onUpdateTopic={onUpdateTopic}
                     />
                 </div>

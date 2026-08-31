@@ -1,0 +1,365 @@
+name: Evaluate Laravel Submission
+
+on:
+  workflow_dispatch:
+    inputs:
+      attempt_token:
+        description: "Callback token from Laravel platform"
+        required: true
+        type: string
+      submission_id:
+        description: "Submission ID from Laravel platform"
+        required: true
+        type: string
+      exercise_slug:
+        description: "Exercise slug"
+        required: true
+        type: string
+      test_suite:
+        description: "Hidden test suite key"
+        required: true
+        type: string
+      student_branch:
+        description: "Student branch name"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    env:
+      ACADEMY_URL: ${{ secrets.ACADEMY_URL }}
+      ACADEMY_CALLBACK_SECRET: ${{ secrets.ACADEMY_CALLBACK_SECRET }}
+
+    steps:
+      - name: Checkout submitted branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.student_branch }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: mbstring, dom, fileinfo, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Run Laravel evaluation and always create result
+        id: evaluation
+        shell: bash
+        env:
+          ATTEMPT_TOKEN: ${{ inputs.attempt_token }}
+          SUBMISSION_ID: ${{ inputs.submission_id }}
+          EXERCISE_SLUG: ${{ inputs.exercise_slug }}
+          TEST_SUITE: ${{ inputs.test_suite }}
+          STUDENT_BRANCH: ${{ inputs.student_branch }}
+        run: |
+          set -euo pipefail
+          mkdir -p evaluation-results
+
+          STATUS="failed"
+          SCORE=0
+          MESSAGE="Evaluation did not finish."
+
+          echo "Starting evaluation..." > evaluation-results/full-output.txt
+
+          set +e
+
+          if [ ! -f composer.json ]; then
+            MESSAGE="composer.json not found. The submitted branch does not look like a Laravel project."
+          else
+            echo ">>> Installing Composer dependencies" >> evaluation-results/full-output.txt
+            composer install --no-interaction --prefer-dist --no-progress >> evaluation-results/full-output.txt 2>&1
+            INSTALL_EXIT=$?
+
+            if [ "$INSTALL_EXIT" -ne 0 ]; then
+              MESSAGE="Composer install failed."
+            else
+              mkdir -p database
+              touch database/database.sqlite
+
+              cat > .env <<EOF
+          APP_NAME=Laravel
+          APP_ENV=testing
+          APP_KEY=
+          APP_DEBUG=true
+          APP_URL=http://localhost
+
+          DB_CONNECTION=sqlite
+          DB_DATABASE=${{ github.workspace }}/database/database.sqlite
+
+          CACHE_STORE=array
+          SESSION_DRIVER=array
+          QUEUE_CONNECTION=sync
+          MAIL_MAILER=array
+          EOF
+
+              echo ">>> Generating app key" >> evaluation-results/full-output.txt
+              php artisan key:generate --force >> evaluation-results/full-output.txt 2>&1
+              KEY_EXIT=$?
+
+              echo ">>> Clearing config" >> evaluation-results/full-output.txt
+              php artisan config:clear >> evaluation-results/full-output.txt 2>&1
+              CONFIG_EXIT=$?
+
+              echo ">>> Running migrations" >> evaluation-results/full-output.txt
+              php artisan migrate --force >> evaluation-results/full-output.txt 2>&1
+              MIGRATE_EXIT=$?
+
+              if [ "$KEY_EXIT" -ne 0 ] || [ "$CONFIG_EXIT" -ne 0 ] || [ "$MIGRATE_EXIT" -ne 0 ]; then
+                MESSAGE="Laravel setup or migrations failed."
+              else
+                mkdir -p tests/Feature/Hidden
+
+                cat > tests/Feature/Hidden/TasksCrudHiddenTest.php <<'PHP'
+          <?php
+
+          namespace Tests\Feature\Hidden;
+
+          use Illuminate\Foundation\Testing\RefreshDatabase;
+          use Illuminate\Support\Facades\DB;
+          use Illuminate\Support\Facades\Route;
+          use Illuminate\Support\Facades\Schema;
+          use Tests\TestCase;
+
+          class TasksCrudHiddenTest extends TestCase
+          {
+              use RefreshDatabase;
+
+              public function test_tasks_table_and_resource_routes_exist(): void
+              {
+                  $this->assertTrue(Schema::hasTable('tasks'), 'The tasks table does not exist.');
+
+                  $expectedRoutes = [
+                      'tasks.index',
+                      'tasks.create',
+                      'tasks.store',
+                      'tasks.show',
+                      'tasks.edit',
+                      'tasks.update',
+                      'tasks.destroy',
+                  ];
+
+                  foreach ($expectedRoutes as $routeName) {
+                      $this->assertTrue(
+                          Route::has($routeName),
+                          "Missing route name: {$routeName}. Use Route::resource('tasks', TaskController::class)."
+                      );
+                  }
+              }
+
+              public function test_task_title_is_required(): void
+              {
+                  $response = $this
+                      ->from('/tasks/create')
+                      ->post('/tasks', [
+                          'title' => '',
+                          'is_done' => false,
+                      ]);
+
+                  $response->assertSessionHasErrors(['title']);
+              }
+
+              public function test_task_can_be_created_updated_and_deleted(): void
+              {
+                  $createResponse = $this->post('/tasks', [
+                      'title' => 'Hidden Task',
+                      'is_done' => false,
+                  ]);
+
+                  $this->assertContains($createResponse->getStatusCode(), [200, 201, 302]);
+
+                  $this->assertDatabaseHas('tasks', [
+                      'title' => 'Hidden Task',
+                  ]);
+
+                  $taskId = DB::table('tasks')
+                      ->where('title', 'Hidden Task')
+                      ->value('id');
+
+                  $this->assertNotNull($taskId, 'The created task id was not found.');
+
+                  $updateResponse = $this->put('/tasks/'.$taskId, [
+                      'title' => 'Updated Hidden Task',
+                      'is_done' => true,
+                  ]);
+
+                  $this->assertContains($updateResponse->getStatusCode(), [200, 201, 302]);
+
+                  $this->assertDatabaseHas('tasks', [
+                      'id' => $taskId,
+                      'title' => 'Updated Hidden Task',
+                  ]);
+
+                  $deleteResponse = $this->delete('/tasks/'.$taskId);
+
+                  $this->assertContains($deleteResponse->getStatusCode(), [200, 204, 302]);
+
+                  $this->assertDatabaseMissing('tasks', [
+                      'id' => $taskId,
+                  ]);
+              }
+          }
+          PHP
+
+                echo ">>> Running hidden tests" >> evaluation-results/full-output.txt
+                php artisan test --filter=TasksCrudHiddenTest --colors=never >> evaluation-results/full-output.txt 2>&1
+                TEST_EXIT=$?
+
+                if [ "$TEST_EXIT" -eq 0 ]; then
+                  STATUS="passed"
+                  SCORE=100
+                  MESSAGE="Hidden Laravel Tasks CRUD tests passed."
+                else
+                  STATUS="failed"
+                  SCORE=0
+                  MESSAGE="Hidden Laravel Tasks CRUD tests failed."
+                fi
+              fi
+            fi
+          fi
+
+          export EVAL_STATUS="$STATUS"
+          export EVAL_SCORE="$SCORE"
+          export EVAL_MESSAGE="$MESSAGE"
+
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          output_path = Path("evaluation-results/full-output.txt")
+          output = output_path.read_text(errors="replace") if output_path.exists() else ""
+
+          result_payload = {
+              "attempt_token": os.environ.get("ATTEMPT_TOKEN"),
+              "submission_id": os.environ.get("SUBMISSION_ID"),
+              "exercise_slug": os.environ.get("EXERCISE_SLUG"),
+              "test_suite": os.environ.get("TEST_SUITE"),
+              "student_branch": os.environ.get("STUDENT_BRANCH"),
+              "status": os.environ.get("EVAL_STATUS", "failed"),
+              "score": int(os.environ.get("EVAL_SCORE", "0")),
+              "message": os.environ.get("EVAL_MESSAGE", "Evaluation failed."),
+              "output": output[-12000:]
+          }
+
+          Path("evaluation-results/result.json").write_text(json.dumps(result_payload, indent=2))
+          PY
+
+          echo "eval_status=$STATUS" >> "$GITHUB_OUTPUT"
+
+      - name: Send callback to Academy
+        if: always()
+        shell: bash
+        env:
+          ATTEMPT_TOKEN: ${{ inputs.attempt_token }}
+          ACADEMY_URL: ${{ secrets.ACADEMY_URL }}
+          ACADEMY_CALLBACK_SECRET: ${{ secrets.ACADEMY_CALLBACK_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${ATTEMPT_TOKEN:-}" ]; then
+            echo "Missing attempt_token; skipping callback."
+            exit 0
+          fi
+
+          if [ -z "${ACADEMY_URL:-}" ] || [ -z "${ACADEMY_CALLBACK_SECRET:-}" ]; then
+            echo "Missing ACADEMY_URL or ACADEMY_CALLBACK_SECRET"
+            exit 1
+          fi
+
+          if [[ "$ACADEMY_URL" != http://* && "$ACADEMY_URL" != https://* ]]; then
+            echo "ACADEMY_URL must be a full http(s) URL, got: $ACADEMY_URL"
+            exit 1
+          fi
+
+          callback_url="${ACADEMY_URL%/}/api/exercises/github-callback"
+          echo "Callback URL: $callback_url"
+
+          result_file="evaluation-results/result.json"
+          if [ ! -f "$result_file" ]; then
+            echo "Missing $result_file"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json
+          import os
+          import hmac
+          import hashlib
+          import subprocess
+          from pathlib import Path
+
+          result_path = Path("evaluation-results/result.json")
+          payload = json.loads(result_path.read_text())
+          status = payload.get("status", "failed")
+          passed = status == "passed"
+          score = payload.get("score", 0)
+
+          callback_payload = {
+              "attempt_token": payload.get("attempt_token"),
+              "status": "completed" if passed else "failed",
+              "score": score,
+              "passed": passed,
+              "feedback": {
+                  "earned_points": score,
+                  "total_points": 100,
+                  "checks": [
+                      {
+                          "language": "php",
+                          "points": score,
+                          "passed": passed,
+                          "message": payload.get("message", "Evaluation completed."),
+                      }
+                  ],
+              },
+          }
+
+          callback_path = Path("evaluation-results/callback.json")
+          callback_path.write_text(json.dumps(callback_payload, indent=2))
+          PY
+
+          payload=$(cat evaluation-results/callback.json)
+          signature=$(python3 - <<'PY'
+          import hashlib
+          import hmac
+          import os
+
+          secret = os.environ.get("ACADEMY_CALLBACK_SECRET", "")
+          payload = open("evaluation-results/callback.json", "r", encoding="utf-8").read()
+          print("sha256=" + hmac.new(secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest())
+          PY
+          )
+
+          response_file=$(mktemp)
+          http_code=$(curl -sS -w '%{http_code}' -o "$response_file" \
+            -H "Content-Type: application/json" \
+            -H "X-Academy-Signature: $signature" \
+            --data-binary @"evaluation-results/callback.json" \
+            "$callback_url")
+
+          echo "HTTP status: $http_code"
+          echo "Response body:"
+          cat "$response_file"
+
+          if [ "$http_code" != "200" ] && [ "$http_code" != "204" ]; then
+            echo "Callback failed"
+            exit 1
+          fi
+
+      - name: Upload result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-result-${{ inputs.submission_id }}
+          path: |
+            evaluation-results/result.json
+            evaluation-results/full-output.txt
+            evaluation-results/callback.json
+
+      - name: Fail workflow if evaluation failed
+        if: steps.evaluation.outputs.eval_status != 'passed'
+        run: exit 1

@@ -8,8 +8,14 @@ import TopicSettingsTab from './TopicSettingsTab';
 import Quizes from '@/components/quizes';
 import Exercises from '@/components/exercices';
 
-export default function LessonTabs({ topic, onUpdateTopic }) {
+export default function LessonTabs({
+    topic,
+    publishableClasses = [],
+    onUpdateTopic,
+}) {
     const [activeTab, setActiveTab] = useState('theory');
+
+    const exercises = topic?.exercises ?? [];
 
     const tabs = [
         { id: 'theory', label: 'Theory', icon: BookOpen },
@@ -31,11 +37,10 @@ export default function LessonTabs({ topic, onUpdateTopic }) {
                             key={tab.id}
                             type="button"
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 rounded-t-xl px-4 py-2.5 text-xs font-semibold transition ${
-                                isActive
-                                    ? 'border border-border border-b-card bg-card text-foreground'
-                                    : 'text-muted-foreground hover:bg-background hover:text-foreground'
-                            }`}
+                            className={`flex items-center gap-2 rounded-t-xl px-4 py-2.5 text-xs font-semibold transition ${isActive
+                                ? 'border border-border border-b-card bg-card text-foreground'
+                                : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                                }`}
                         >
                             <Icon className="size-4" />
                             {tab.label}
@@ -89,29 +94,59 @@ export default function LessonTabs({ topic, onUpdateTopic }) {
 
                 {activeTab === 'exercise' && (
                     <div className="space-y-5">
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground">
-                                Practical Exercise
-                            </h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Create a coding challenge for this lesson.
-                            </p>
-                        </div>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-foreground">
+                                    Practical Exercise
+                                </h3>
 
-                        <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-8">
-                            <div className="flex items-center justify-between gap-4">
-                                <div>
-                                    <h4 className="font-medium text-foreground">
-                                        No exercise created yet
-                                    </h4>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Help students practice what they learned.
-                                    </p>
-                                </div>
-
-                                <Exercises coachType="coding" topicId={topic?.id} />
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Create and manage coding challenges for this lesson.
+                                </p>
                             </div>
+
+                            <Exercises
+                                coachType="coding"
+                                topicId={topic?.id}
+                                publishableClasses={publishableClasses}
+                            />
                         </div>
+
+                        {exercises.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-8">
+                                <h4 className="font-medium text-foreground">
+                                    No exercise created yet
+                                </h4>
+
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Help students practice what they learned.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {exercises.map((exercise) => (
+                                    <div
+                                        key={exercise.id}
+                                        className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate font-semibold text-foreground">
+                                                {exercise.title}
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {exercise.correction_engine} ·{' '}
+                                                {exercise.exercise_type} · {exercise.status}
+                                            </p>
+                                        </div>
+
+                                        <span className="shrink-0 rounded-full border border-alpha/35 bg-alpha/10 px-3 py-1 text-sm font-medium text-foreground">
+                                            +{exercise.xp_reward ?? 0} XP
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 

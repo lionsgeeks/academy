@@ -47,4 +47,10 @@ return [
         'token_ttl_seconds' => (int) env('JITSI_TOKEN_TTL_SECONDS', 3600),
     ],
 
+    'github' => [
+        'token' => env('GITHUB_ACTIONS_TOKEN'),
+        'api_url' => env('GITHUB_API_URL', 'https://api.github.com'),
+        'callback_secret' => env('GITHUB_EXERCISE_CALLBACK_SECRET'),
+    ],
+
 ];
